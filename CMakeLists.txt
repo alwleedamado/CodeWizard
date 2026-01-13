@@ -110,7 +110,7 @@ include(cmake/PackageProject.cmake)
 # we know we want to ship
 CodeWizard_package_project(
   TARGETS
-  example
+  codewizard
   CodeWizard_options
   CodeWizard_warnings
   # FIXME: this does not work! CK
