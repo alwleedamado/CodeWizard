@@ -7,24 +7,13 @@
     <x>0</x>
     <y>0</y>
     <width>800</width>
-    <height>600</height>
+    <height>594</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>MainWindow</string>
   </property>
-  <widget class="QWidget" name="centralwidget">
-   <widget class="QPlainTextEdit" name="codeEditor">
-    <property name="geometry">
-     <rect>
-      <x>0</x>
-      <y>0</y>
-      <width>801</width>
-      <height>531</height>
-     </rect>
-    </property>
-   </widget>
-  </widget>
+  <widget class="QWidget" name="centralwidget"/>
   <widget class="QMenuBar" name="menubar">
    <property name="geometry">
     <rect>
@@ -39,7 +28,9 @@
      <string>&amp;FIle</string>
     </property>
     <addaction name="action_Open"/>
+    <addaction name="action_Save"/>
     <addaction name="action_Quit"/>
+    <addaction name="separator"/>
    </widget>
    <addaction name="menu_FIle"/>
   </widget>
@@ -52,6 +43,11 @@
   <action name="action_Quit">
    <property name="text">
     <string>&amp;Quit</string>
+   </property>
+  </action>
+  <action name="action_Save">
+   <property name="text">
+    <string>&amp;Save File</string>
    </property>
   </action>
  </widget>

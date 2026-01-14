@@ -9,15 +9,13 @@ set(CMAKE_AUTORCC ON)
 
 find_package(Qt6 REQUIRED COMPONENTS Core Widgets)
 
-# ---------- self-contained sources ----------
 qt_add_executable(codewizard
         src/main.cpp
         src/MainWindow.cpp
         src/MainWindow.h
         src/ui/MainWindow.ui
-        src/EditorWidget.cpp
-        src/EditorWidget.h
-        # QTextBrowser float
+        src/editor/EditorWidget.cpp
+        src/editor/EditorWidget.h
 )
 
 target_link_libraries(codewizard PRIVATE

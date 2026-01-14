@@ -1,4 +1,5 @@
 #pragma once
+#include "editor/EditorWidget.h"
 #include "ui/ui_MainWindow.h"
 #include <QMainWindow>
 
@@ -10,9 +11,13 @@ public:
   ~MainWindow() override;
 private slots:
   void openFile();
-  void setupConnections();
+  void saveFile();
   void quit();
+  void updateWindowTitle();
 private:
+  void setupConnections();
+  void saveAsFile();
+
   Ui::MainWindow *ui;
-  QString currentFilePath;
+  EditorWidget* m_editor;
 };
