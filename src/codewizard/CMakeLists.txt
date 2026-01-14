@@ -16,6 +16,8 @@ qt_add_executable(codewizard
         src/ui/MainWindow.ui
         src/editor/EditorWidget.cpp
         src/editor/EditorWidget.h
+        src/SyntaxHighlighter.cpp
+        src/SyntaxHighlighter.h
 )
 
 target_link_libraries(codewizard PRIVATE

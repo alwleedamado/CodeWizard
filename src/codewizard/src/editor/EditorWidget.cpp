@@ -3,6 +3,9 @@
 //
 
 #include "EditorWidget.h"
+
+#include "../SyntaxHighlighter.h"
+
 #include <QFile>
 #include <QMessageBox>
 #include <QTextDocument>
@@ -14,6 +17,7 @@ EditorWidget::EditorWidget(QWidget* parent)
   setLayout(new QVBoxLayout());
   setContentsMargins(0, 0, 0, 0);
   layout()->addWidget(m_widget);
+  new SyntaxHighlighter(m_widget->document());
   connect(m_widget->document(), &QTextDocument::modificationChanged, this, &EditorWidget::onModificationChanged);
 }
 EditorWidget::~EditorWidget()
