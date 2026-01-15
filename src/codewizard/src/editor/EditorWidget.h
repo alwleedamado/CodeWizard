@@ -1,13 +1,13 @@
 #pragma once
 #include <QPlainTextEdit>
-
+#include <QSyntaxHighlighter>
 
 class EditorWidget final : public QWidget
 {
   Q_OBJECT
 public:
   explicit EditorWidget(QWidget* parent = nullptr);
-  ~EditorWidget() override;
+  ~EditorWidget() override = default;
 
   bool loadFromFile(const QString& filepath);
   bool saveToFile(const QString& filepath);
@@ -16,7 +16,11 @@ public:
   // ReSharper disable once CppMemberFunctionMayBeConst
   void setModified(bool modified) { m_widget->document()->setModified(modified); }
   [[nodiscard]] QString filePath() const { return m_filePath; }
-  void setFilePath(const QString& filepath) { m_filePath = filepath; }
+  void setFilePath(const QString& filepath)
+  {
+    m_filePath = filepath;
+    emit filePathChanged(filepath);
+  }
 
   [[nodiscard]] const QPlainTextEdit* get_widget() const { return m_widget; }
   QPlainTextEdit* get_widget() { return m_widget; }
@@ -24,7 +28,10 @@ public:
 private:
   QPlainTextEdit* m_widget;
   QString m_filePath;
+  QSyntaxHighlighter* m_highlighter = nullptr;
 
+  static bool isFileTooLarge(const QString &filePath);
+  static bool hasVeryLongLine(const QString &filePath, int maxLineLength = 100'000);
 signals:
   void modificationChanged(bool modified);
   void filePathChanged(const QString& filepath);

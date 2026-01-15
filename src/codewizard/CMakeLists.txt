@@ -16,8 +16,8 @@ qt_add_executable(codewizard
         src/ui/MainWindow.ui
         src/editor/EditorWidget.cpp
         src/editor/EditorWidget.h
-        src/SyntaxHighlighter.cpp
-        src/SyntaxHighlighter.h
+        src/editor/SyntaxHighlighter.h
+        src/editor/SyntaxHighlighter.cpp
 )
 
 target_link_libraries(codewizard PRIVATE
@@ -27,7 +27,7 @@ target_link_libraries(codewizard PRIVATE
 
 # Size-first release flags
 if(CMAKE_BUILD_TYPE STREQUAL Release)
-    target_compile_options(codewizard PRIVATE -Oz -flto)
+    target_compile_options(codewizard PRIVATE -Os -flto)
     target_link_options(codewizard PRIVATE -flto -s)
 endif()
 

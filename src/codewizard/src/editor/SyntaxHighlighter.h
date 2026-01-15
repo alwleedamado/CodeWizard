@@ -8,6 +8,7 @@ class SyntaxHighlighter final : public QSyntaxHighlighter
 {
 public:
   explicit SyntaxHighlighter(QTextDocument *parent = nullptr);
+  void setMaxHighlightLength(int maxLength) {m_maxLineLengthForHighlighting = maxLength;}
 protected:
   void highlightBlock(const QString &text) override;
 private:
@@ -27,4 +28,5 @@ private:
   QTextCharFormat multiLineCommentFormat;
   QTextCharFormat quotationFormat;
   QTextCharFormat functionFormat;
+  int m_maxLineLengthForHighlighting = 100'1000;
 };

@@ -45,6 +45,8 @@ SyntaxHighlighter::SyntaxHighlighter(QTextDocument *parent) : QSyntaxHighlighter
 
 void SyntaxHighlighter::highlightBlock(const QString &text)
 {
+  if (text.size() > m_maxLineLengthForHighlighting)
+    return;
   for (const HighlightingRule &rule : std::as_const(highlightingRules)) {
     QRegularExpressionMatchIterator matchIterator = rule.pattern.globalMatch(text);
     while (matchIterator.hasNext()) {
