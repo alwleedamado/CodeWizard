@@ -1,0 +1,5 @@
+build*/
+.qtcreator/
+.idea/
+.vs/
+.clion/
