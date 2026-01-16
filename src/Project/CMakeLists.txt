@@ -5,6 +5,11 @@
 # --------------------------
 add_library(Project INTERFACE)
 
+target_link_libraries(Project
+    INTERFACE Services
+    INTERFACE Platform
+)
+
 target_include_directories(Project
     INTERFACE
         ${CMAKE_CURRENT_SOURCE_DIR}/include
@@ -22,5 +27,8 @@ target_include_directories(ProjectImpl
         ${CMAKE_CURRENT_SOURCE_DIR}/internal
 )
 
-# Link Qt only for modules that need it
-# Modify below as needed
+target_link_libraries(ProjectImpl
+    PRIVATE Project
+    PRIVATE Services
+    PRIVATE Platform
+)

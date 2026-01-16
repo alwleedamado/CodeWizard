@@ -1,26 +1,32 @@
-# Auto-generated CMakeLists.txt for Services module
+# ---------------------------------------------------------------------------
+# Services module
+# ---------------------------------------------------------------------------
 
-# --------------------------
-# Public interface
-# --------------------------
+# Public headers
 add_library(Services INTERFACE)
-
 target_include_directories(Services
-    INTERFACE
-        ${CMAKE_CURRENT_SOURCE_DIR}/include
+    INTERFACE include
 )
 
-# --------------------------
-# Private implementation
-# --------------------------
+# Services depend on Platform
+target_link_libraries(Services
+    INTERFACE Platform
+)
+
+# Internal implementation
 add_library(ServicesImpl STATIC
-    internal/ServicesImpl.cpp
+    internal/ServiceImpl.cpp
+    internal/ServiceRegistry.cpp
+    internal/EventBus.cpp
+    internal/TaskScheduler.cpp
 )
 
 target_include_directories(ServicesImpl
-    PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}/internal
+    PRIVATE internal
 )
 
-# Link Qt only for modules that need it
-# Modify below as needed
+# Implementation links
+target_link_libraries(ServicesImpl
+    PRIVATE Services
+    PRIVATE Platform
+)

@@ -1,9 +1,13 @@
-# Auto-generated CMakeLists.txt for Editor module
-
 # --------------------------
 # Public interface
 # --------------------------
 add_library(Editor INTERFACE)
+
+target_link_libraries(Editor
+    INTERFACE Services
+    INTERFACE Platform
+    INTERFACE Extensibility
+)
 
 target_include_directories(Editor
     INTERFACE
@@ -22,6 +26,10 @@ target_include_directories(EditorImpl
         ${CMAKE_CURRENT_SOURCE_DIR}/internal
 )
 
-# Link Qt only for modules that need it
-# Modify below as needed
-target_link_libraries(EditorImpl PRIVATE Qt6::Core)
+target_link_libraries(EditorImpl
+    PRIVATE Qt::Core
+    PRIVATE Editor
+    PRIVATE Services
+    PRIVATE Platform
+    PRIVATE Extensibility
+)

@@ -1,9 +1,12 @@
-# Auto-generated CMakeLists.txt for Extensibility module
-
 # --------------------------
 # Public interface
 # --------------------------
 add_library(Extensibility INTERFACE)
+
+target_link_libraries(Extensibility
+    INTERFACE Services
+    INTERFACE Platform
+)
 
 target_include_directories(Extensibility
     INTERFACE
@@ -22,5 +25,8 @@ target_include_directories(ExtensibilityImpl
         ${CMAKE_CURRENT_SOURCE_DIR}/internal
 )
 
-# Link Qt only for modules that need it
-# Modify below as needed
+target_link_libraries(ExtensibilityImpl
+    PRIVATE Extensibility
+    PRIVATE Services
+    PRIVATE Platform
+)

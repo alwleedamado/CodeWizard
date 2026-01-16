@@ -1,9 +1,11 @@
-# Auto-generated CMakeLists.txt for Persistence module
-
 # --------------------------
 # Public interface
 # --------------------------
 add_library(Persistence INTERFACE)
+
+target_link_libraries(Persistence
+    INTERFACE Services
+)
 
 target_include_directories(Persistence
     INTERFACE
@@ -22,5 +24,7 @@ target_include_directories(PersistenceImpl
         ${CMAKE_CURRENT_SOURCE_DIR}/internal
 )
 
-# Link Qt only for modules that need it
-# Modify below as needed
+target_link_libraries(PersistenceImpl
+    PRIVATE Persistence
+    PRIVATE Services
+)

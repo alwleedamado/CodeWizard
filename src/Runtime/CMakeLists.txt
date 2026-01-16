@@ -1,4 +1,10 @@
 add_library(Runtime INTERFACE)
+
+target_link_libraries(Runtime
+    INTERFACE Services
+    INTERFACE BuildRun
+)
+
 target_include_directories(Runtime INTERFACE include)
 
 add_library(RuntimeImpl STATIC
@@ -8,5 +14,9 @@ add_library(RuntimeImpl STATIC
 )
 
 target_include_directories(RuntimeImpl PRIVATE internal)
-target_link_libraries(RuntimeImpl PRIVATE Runtime)
 
+target_link_libraries(RuntimeImpl
+    PRIVATE Runtime
+    PRIVATE Services
+    PRIVATE BuildRun
+)

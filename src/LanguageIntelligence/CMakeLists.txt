@@ -5,6 +5,11 @@
 # --------------------------
 add_library(LanguageIntelligence INTERFACE)
 
+target_link_libraries(LanguageIntelligence
+    INTERFACE Editor
+    INTERFACE Services
+)
+
 target_include_directories(LanguageIntelligence
     INTERFACE
         ${CMAKE_CURRENT_SOURCE_DIR}/include
@@ -22,6 +27,9 @@ target_include_directories(LanguageIntelligenceImpl
         ${CMAKE_CURRENT_SOURCE_DIR}/internal
 )
 
-# Link Qt only for modules that need it
-# Modify below as needed
-target_link_libraries(LanguageIntelligenceImpl PRIVATE Qt6::Core)
+target_link_libraries(LanguageIntelligenceImpl
+    PRIVATE Qt::Core
+    PRIVATE LanguageIntelligence
+    PRIVATE Editor
+    PRIVATE Services
+)

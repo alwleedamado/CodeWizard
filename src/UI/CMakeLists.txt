@@ -5,6 +5,13 @@
 # --------------------------
 add_library(UI INTERFACE)
 
+target_link_libraries(UI
+    INTERFACE Services
+    INTERFACE Platform
+    INTERFACE Editor
+    INTERFACE Project
+)
+
 target_include_directories(UI
     INTERFACE
         ${CMAKE_CURRENT_SOURCE_DIR}/include
@@ -22,6 +29,12 @@ target_include_directories(UIImpl
         ${CMAKE_CURRENT_SOURCE_DIR}/internal
 )
 
-# Link Qt only for modules that need it
-# Modify below as needed
-target_link_libraries(UIImpl PRIVATE Qt6::Core Qt6::Widgets)
+target_link_libraries(UIImpl
+    PRIVATE UI
+    PRIVATE Services
+    PRIVATE Platform
+    PRIVATE Editor
+    PRIVATE Project
+    PRIVATE Qt6::Core
+    PRIVATE Qt6::Widgets
+)
