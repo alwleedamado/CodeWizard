@@ -1,19 +1,26 @@
 #pragma once
+#include <string>
+#include <vector>
 
 namespace CodeWizard::LanguageIntelligence {
 
-/**
- * @brief Public interface for the LanguageIntelligence subsystem.
- *
- * Architectural constraints:
- * - No UI dependencies unless this is the UI module
- * - No concrete implementations exposed
- * - No cross-layer shortcuts
- */
+struct Diagnostic
+{
+    std::string message;
+    int line;
+    int column;
+};
+
 class ILanguageIntelligence
 {
 public:
     virtual ~ILanguageIntelligence() = default;
+
+    virtual void initialize() = 0;
+    virtual void shutdown() = 0;
+
+    virtual std::vector<Diagnostic> diagnostics() const = 0;
+    virtual void provideCompletions(const std::string& context) = 0;
 };
 
 } // namespace CodeWizard::LanguageIntelligence
