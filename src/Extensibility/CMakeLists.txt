@@ -17,7 +17,7 @@ target_include_directories(Extensibility
 # Private implementation
 # --------------------------
 add_library(ExtensibilityImpl STATIC
-    internal/ExtensibilityImpl.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/internal/ExtensibilityImpl.cpp
 )
 
 target_include_directories(ExtensibilityImpl

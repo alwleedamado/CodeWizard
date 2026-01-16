@@ -1,5 +1,3 @@
-# Auto-generated CMakeLists.txt for Bootstrap module
-
 # --------------------------
 # Public interface
 # --------------------------
@@ -35,6 +33,3 @@ target_include_directories(BootstrapImpl
     PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/internal
 )
-
-# Link Qt only for modules that need it
-# Modify below as needed

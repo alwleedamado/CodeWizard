@@ -16,7 +16,7 @@ target_include_directories(Persistence
 # Private implementation
 # --------------------------
 add_library(PersistenceImpl STATIC
-    internal/PersistenceImpl.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/internal/PersistenceImpl.cpp
 )
 
 target_include_directories(PersistenceImpl

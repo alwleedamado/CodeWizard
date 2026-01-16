@@ -1,3 +1,6 @@
+# --------------------------
+# Public interface
+# --------------------------
 add_library(BuildRun INTERFACE)
 
 target_link_libraries(BuildRun
@@ -10,11 +13,14 @@ target_include_directories(BuildRun
         ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
 
+# --------------------------
+# Private implementation
+# --------------------------
 add_library(BuildRunImpl STATIC
-    internal/BuildOrchestrator.cpp
-    internal/ToolchainManager.cpp
-    internal/Runner.cpp
-    internal/BuildRunImpl.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/internal/BuildOrchestrator.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/internal/ToolchainManager.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/internal/Runner.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/internal/BuildRunImpl.cpp
 )
 target_include_directories(BuildRunImpl PRIVATE internal)
 

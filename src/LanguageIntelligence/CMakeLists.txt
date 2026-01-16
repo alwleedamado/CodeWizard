@@ -19,7 +19,10 @@ target_include_directories(LanguageIntelligence
 # Private implementation
 # --------------------------
 add_library(LanguageIntelligenceImpl STATIC
-    internal/LanguageIntelligenceImpl.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/internal/LanguageIntelligenceImpl.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/internal/CompletionEngine.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/internal/DiagnosticsManager.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/internal/LSPClient.cpp
 )
 
 target_include_directories(LanguageIntelligenceImpl

@@ -15,7 +15,7 @@ target_link_libraries(Services
 
 # Internal implementation
 add_library(ServicesImpl STATIC
-    internal/ServiceImpl.cpp
+    internal/ServicesImpl.cpp
     internal/ServiceRegistry.cpp
     internal/EventBus.cpp
     internal/TaskScheduler.cpp

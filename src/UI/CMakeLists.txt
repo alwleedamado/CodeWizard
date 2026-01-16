@@ -1,5 +1,3 @@
-# Auto-generated CMakeLists.txt for UI module
-
 # --------------------------
 # Public interface
 # --------------------------
@@ -21,7 +19,7 @@ target_include_directories(UI
 # Private implementation
 # --------------------------
 add_library(UIImpl STATIC
-    internal/UIImpl.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/internal/UIImpl.cpp
 )
 
 target_include_directories(UIImpl

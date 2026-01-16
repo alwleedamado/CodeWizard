@@ -10,10 +10,10 @@ target_include_directories(Platform
 
 # Internal implementation
 add_library(PlatformImpl STATIC
-    internal/PlatformImpl.cpp
-    internal/FileSystem.cpp
-    internal/Threading.cpp
-    internal/Timer.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/internal/PlatformImpl.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/internal/FileSystem.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/internal/Threading.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/internal/Timer.cpp
 )
 
 target_include_directories(PlatformImpl
@@ -24,6 +24,3 @@ target_include_directories(PlatformImpl
 target_link_libraries(PlatformImpl
     PRIVATE Platform
 )
-
-# Optionally expose QtCore if needed in internal threading/timers
-# target_link_libraries(PlatformImpl PRIVATE Qt6::Core)

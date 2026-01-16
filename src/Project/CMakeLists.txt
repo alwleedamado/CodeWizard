@@ -1,5 +1,3 @@
-# Auto-generated CMakeLists.txt for Project module
-
 # --------------------------
 # Public interface
 # --------------------------
@@ -19,7 +17,7 @@ target_include_directories(Project
 # Private implementation
 # --------------------------
 add_library(ProjectImpl STATIC
-    internal/ProjectImpl.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/internal/ProjectImpl.cpp
 )
 
 target_include_directories(ProjectImpl
