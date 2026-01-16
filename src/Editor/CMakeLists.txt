@@ -36,4 +36,5 @@ target_link_libraries(EditorImpl
     PRIVATE Services
     PRIVATE Platform
     PRIVATE Extensibility
+    PRIVATE LanguageIntelligence
 )

@@ -2,8 +2,8 @@
 
 #include <memory>
 #include <string>
+#include <LanguageIntelligence/ILanguageIntelligence.h>
 #include "Editor/IEditor.h"
-#include "LanguageIntelligence/ILanguageIntelligence.h"
 
 namespace CodeWizard::Editor::Internal {
 
