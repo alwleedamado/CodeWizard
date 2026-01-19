@@ -1,32 +1,11 @@
-# --------------------------
-# Public interface
-# --------------------------
-add_library(Extensibility INTERFACE)
+# src/Extensibility/CMakeLists.txt
+file(GLOB_RECURSE SOURCES "src/*.cpp")
+add_library(Extensibility STATIC ${SOURCES})
 
-target_link_libraries(Extensibility
-    INTERFACE Services
-    INTERFACE Platform
-)
+target_include_directories(Extensibility PUBLIC include)
+target_link_libraries(Extensibility PUBLIC Core Platform)
+target_compile_features(Extensibility PUBLIC cxx_std_20)
 
-target_include_directories(Extensibility
-    INTERFACE
-        ${CMAKE_CURRENT_SOURCE_DIR}/include
-)
-
-# --------------------------
-# Private implementation
-# --------------------------
-add_library(ExtensibilityImpl STATIC
-    ${CMAKE_CURRENT_SOURCE_DIR}/internal/ExtensibilityImpl.cpp
-)
-
-target_include_directories(ExtensibilityImpl
-    PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}/internal
-)
-
-target_link_libraries(ExtensibilityImpl
-    PRIVATE Extensibility
-    PRIVATE Services
-    PRIVATE Platform
-)
+if(UNIX AND NOT APPLE)
+    target_link_libraries(Extensibility PRIVATE pthread dl)
+endif()

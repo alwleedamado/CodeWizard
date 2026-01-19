@@ -1,13 +1,9 @@
-# Catch2 headless test for Platform
+# tests/Platform/CMakeLists.txt
 add_executable(PlatformTests
-    PlatformTest.cpp
+    PathTests.cpp
+    FileSystemTests.cpp
 )
 
-target_include_directories(PlatformTests
-    PRIVATE
-        ../..
-        ../../src/Platform/include
-)
-
-# Link module implementation if needed
-target_link_libraries(PlatformTests PRIVATE PlatformImpl)
+target_link_libraries(PlatformTests PRIVATE Platform Catch2::Catch2WithMain)
+target_compile_features(PlatformTests PRIVATE cxx_std_20)
+add_test(NAME PlatformTests COMMAND PlatformTests)

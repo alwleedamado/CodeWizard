@@ -1,32 +1,11 @@
-# --------------------------
-# Public interface
-# --------------------------
-add_library(BuildRun INTERFACE)
+# src/BuildRun/CMakeLists.txt
+file(GLOB_RECURSE SOURCES "src/*.cpp")
+add_library(BuildRun STATIC ${SOURCES})
 
-target_link_libraries(BuildRun
-    INTERFACE Services
-    INTERFACE Platform
-)
+target_include_directories(BuildRun PUBLIC include)
+target_link_libraries(BuildRun PUBLIC Core Platform Services)
+target_compile_features(BuildRun PUBLIC cxx_std_20)
 
-target_include_directories(BuildRun
-    INTERFACE
-        ${CMAKE_CURRENT_SOURCE_DIR}/include
-)
-
-# --------------------------
-# Private implementation
-# --------------------------
-add_library(BuildRunImpl STATIC
-    ${CMAKE_CURRENT_SOURCE_DIR}/internal/BuildOrchestrator.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/internal/ToolchainManager.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/internal/Runner.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/internal/BuildRunImpl.cpp
-)
-target_include_directories(BuildRunImpl PRIVATE internal)
-
-target_link_libraries(BuildRunImpl
-    PRIVATE Qt::Core
-    PRIVATE BuildRun
-    PRIVATE Services
-    PRIVATE Platform
-)
+if(UNIX AND NOT APPLE)
+    target_link_libraries(BuildRun PRIVATE pthread dl)
+endif()

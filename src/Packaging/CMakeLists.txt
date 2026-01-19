@@ -1,11 +1,7 @@
-add_library(Packaging INTERFACE)
-target_include_directories(Packaging
-    INTERFACE
-        ${CMAKE_CURRENT_SOURCE_DIR}/include
-)
+# src/Packaging/CMakeLists.txt
+file(GLOB_RECURSE SOURCES "src/*.cpp")
+add_library(Packaging STATIC ${SOURCES})
 
-add_library(PackagingImpl STATIC
-    ${CMAKE_CURRENT_SOURCE_DIR}/internal/Packager.cpp
-)
-target_include_directories(PackagingImpl PRIVATE internal)
-#target_link_libraries(PackagingImpl PRIVATE BuildRunImpl Qt6::Core)
+target_include_directories(Packaging PUBLIC include)
+target_link_libraries(Packaging PUBLIC Core Platform)
+target_compile_features(Packaging PUBLIC cxx_std_20)

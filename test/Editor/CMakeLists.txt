@@ -1,13 +1,9 @@
-# Catch2 headless test for Editor
+# tests/Editor/CMakeLists.txt
 add_executable(EditorTests
-    EditorTest.cpp
+    TextBufferTests.cpp
+    DocumentTests.cpp
 )
 
-target_include_directories(EditorTests
-    PRIVATE
-        ../..
-        ../../src/Editor/include
-)
-
-# Link module implementation if needed
-target_link_libraries(EditorTests PRIVATE EditorImpl)
+target_link_libraries(EditorTests PRIVATE Editor Catch2::Catch2WithMain)
+target_compile_features(EditorTests PRIVATE cxx_std_20)
+add_test(NAME EditorTests COMMAND EditorTests)

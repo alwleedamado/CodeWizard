@@ -1,38 +1,18 @@
-# Auto-generated CMakeLists.txt for LanguageIntelligence module
-
-# --------------------------
-# Public interface
-# --------------------------
-add_library(LanguageIntelligence INTERFACE)
-
-target_link_libraries(LanguageIntelligence
-    INTERFACE Editor
-    INTERFACE Services
+# src/LanguageIntelligence/CMakeLists.txt
+add_library(LanguageIntelligence STATIC
+    src/Diagnostic.cpp
+    src/LspMessage.cpp
+    src/LspClient.cpp
 )
 
-target_include_directories(LanguageIntelligence
-    INTERFACE
-        ${CMAKE_CURRENT_SOURCE_DIR}/include
-)
 
-# --------------------------
-# Private implementation
-# --------------------------
-add_library(LanguageIntelligenceImpl STATIC
-    ${CMAKE_CURRENT_SOURCE_DIR}/internal/LanguageIntelligenceImpl.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/internal/CompletionEngine.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/internal/DiagnosticsManager.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/internal/LSPClient.cpp
-)
+target_link_libraries(LanguageIntelligence PRIVATE nlohmann_json::nlohmann_json)
 
-target_include_directories(LanguageIntelligenceImpl
-    PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}/internal
-)
+target_include_directories(LanguageIntelligence PUBLIC include)
+target_link_libraries(LanguageIntelligence PUBLIC Core Platform Services Editor)
+target_compile_features(LanguageIntelligence PUBLIC cxx_std_20)
 
-target_link_libraries(LanguageIntelligenceImpl
-    PRIVATE Qt::Core
-    PRIVATE LanguageIntelligence
-    PRIVATE Editor
-    PRIVATE Services
-)
+# Linux-specific
+if(UNIX AND NOT APPLE)
+    target_link_libraries(LanguageIntelligence PRIVATE pthread)
+endif()

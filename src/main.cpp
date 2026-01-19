@@ -1,13 +1,7 @@
 #include <QtWidgets/QApplication>
-#include <QtWidgets/QMainWindow>
-
+#include <Runtime/Application.h>
 int main(int argc, char** argv)
 {
-    QApplication app(argc, argv);
-
-    QMainWindow mainWindow;
-    mainWindow.setWindowTitle("CodeWizard");
-    mainWindow.show();
-
-    return app.exec();
+   auto app = CodeWizard::Runtime::Application::instance();
+    return app.run(argc, argv);
 }

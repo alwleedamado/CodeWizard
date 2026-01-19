@@ -1,32 +1,9 @@
-# ---------------------------------------------------------------------------
-# Services module
-# ---------------------------------------------------------------------------
-
-# Public headers
-add_library(Services INTERFACE)
-target_include_directories(Services
-    INTERFACE include
+# src/Services/CMakeLists.txt
+add_library(Services STATIC
+    src/ServiceRegistry.cpp
+    src/GlobalServices.cpp
 )
 
-# Services depend on Platform
-target_link_libraries(Services
-    INTERFACE Platform
-)
-
-# Internal implementation
-add_library(ServicesImpl STATIC
-    internal/ServicesImpl.cpp
-    internal/ServiceRegistry.cpp
-    internal/EventBus.cpp
-    internal/TaskScheduler.cpp
-)
-
-target_include_directories(ServicesImpl
-    PRIVATE internal
-)
-
-# Implementation links
-target_link_libraries(ServicesImpl
-    PRIVATE Services
-    PRIVATE Platform
-)
+target_include_directories(Services PUBLIC include)
+target_link_libraries(Services PUBLIC Core Platform)
+target_compile_features(Services PUBLIC cxx_std_20)

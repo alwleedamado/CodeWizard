@@ -19,6 +19,12 @@ if (NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Release CACHE STRING "" FORCE)
 endif()
 
+if (CMAKE_BUILD_TYPE STREQUAL "Release" OR CMAKE_BUILD_TYPE STREQUAL "MinSizeRel")
+    set(CodeWizard_ENABLE_HARDENING OFF CACHE BOOL "" FORCE)
+    set(CodeWizard_ENABLE_SANITIZER_ADDRESS OFF CACHE BOOL "" FORCE)
+    set(CodeWizard_ENABLE_SANITIZER_UNDEFINED OFF CACHE BOOL "" FORCE)
+endif()
+
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 include(cmake/PreventInSourceBuilds.cmake)
@@ -57,17 +63,10 @@ find_package(Qt6 REQUIRED COMPONENTS
 )
 
 # ---------------------------------------------------------------------------
-# Global include policy
-# ---------------------------------------------------------------------------
-
-# Only INTERFACE includes are allowed across module boundaries
-set(CODEWIZARD_SRC_DIR ${CMAKE_SOURCE_DIR}/src)
-
-# ---------------------------------------------------------------------------
 # Subsystems
 # Order reflects *dependency direction*, not build convenience
 # ---------------------------------------------------------------------------
-
+add_subdirectory(src/Core)
 add_subdirectory(src/Platform)
 add_subdirectory(src/Services)
 add_subdirectory(src/Extensibility)
@@ -76,22 +75,25 @@ add_subdirectory(src/Editor)
 add_subdirectory(src/LanguageIntelligence)
 add_subdirectory(src/BuildRun)
 add_subdirectory(src/Runtime)
+add_subdirectory(src/Packaging)
 add_subdirectory(src/Persistence)
 add_subdirectory(src/UI)
-add_subdirectory(src/Bootstrap)
-add_subdirectory(src/Packaging)
+
 
 # ---------------------------------------------------------------------------
 # Final executable (composition root only)
 # ---------------------------------------------------------------------------
 
-add_executable(CodeWizardApp
+qt6_add_executable(CodeWizardApp
     src/main.cpp
 )
 
 if(CMAKE_BUILD_TYPE STREQUAL Release)
-    target_compile_options(CodeWizardApp PRIVATE -Os -flto)
-    target_link_options(CodeWizardApp PRIVATE -flto -s)
+    add_compile_options(-Oz -flto)
+    add_link_options(-flto -s)
+endif()
+if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+    add_compile_options(-mno-direct-extern-access)
 endif()
 
 target_link_libraries(CodeWizardApp
@@ -99,12 +101,13 @@ target_link_libraries(CodeWizardApp
         Qt6::Core
         Qt6::Widgets
 
-        # global options
+        # # global options
         CodeWizard_options
-        # warnings
+        # # warnings
         CodeWizard_warnings
 
         # modules
+        Core
         Platform
         Services
         Extensibility
@@ -113,9 +116,9 @@ target_link_libraries(CodeWizardApp
         LanguageIntelligence
         BuildRun
         Runtime
+        Packaging
         Persistence
         UI
-        Bootstrap
 )
 
 set_target_properties(CodeWizardApp PROPERTIES
@@ -125,33 +128,33 @@ set_target_properties(CodeWizardApp PROPERTIES
 include(CTest)
 
 if(BUILD_TESTING)
-  message(AUTHOR_WARNING "Building Tests. Be sure to check out test/constexpr_tests.cpp for constexpr testing")
-  add_subdirectory(test)
+    message(AUTHOR_WARNING "Building Tests. Be sure to check out test/constexpr_tests.cpp for constexpr testing")
+    add_subdirectory(test)
 endif()
 
 
 if(CodeWizard_BUILD_FUZZ_TESTS)
-  message(AUTHOR_WARNING "Building Fuzz Tests, using fuzzing sanitizer https://www.llvm.org/docs/LibFuzzer.html")
-  if (NOT CodeWizard_ENABLE_SANITIZER_ADDRESS AND NOT CodeWizard_ENABLE_SANITIZER_THREAD)
-    message(WARNING "You need asan or tsan enabled for meaningful fuzz testing")
-  endif()
-  add_subdirectory(fuzz_test)
+    message(AUTHOR_WARNING "Building Fuzz Tests, using fuzzing sanitizer https://www.llvm.org/docs/LibFuzzer.html")
+    if (NOT CodeWizard_ENABLE_SANITIZER_ADDRESS AND NOT CodeWizard_ENABLE_SANITIZER_THREAD)
+        message(WARNING "You need asan or tsan enabled for meaningful fuzz testing")
+    endif()
+    add_subdirectory(fuzz_test)
 
 endif()
 
 # If MSVC is being used, and ASAN is enabled, we need to set the debugger environment
 # so that it behaves well with MSVC's debugger, and we can run the target from visual studio
 if(MSVC)
-  get_all_installable_targets(all_targets)
-  message("all_targets=${all_targets}")
-  set_target_properties(${all_targets} PROPERTIES VS_DEBUGGER_ENVIRONMENT "PATH=$(VC_ExecutablePath_x64);%PATH%")
+    get_all_installable_targets(all_targets)
+    message("all_targets=${all_targets}")
+    set_target_properties(${all_targets} PROPERTIES VS_DEBUGGER_ENVIRONMENT "PATH=$(VC_ExecutablePath_x64);%PATH%")
 endif()
 
 # set the startup project for the "play" button in MSVC
 set_property(DIRECTORY PROPERTY VS_STARTUP_PROJECT CodeWizardApp)
 
 if(CMAKE_SKIP_INSTALL_RULES)
-  return()
+    return()
 endif()
 
 include(cmake/PackageProject.cmake)

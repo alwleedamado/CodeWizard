@@ -33,4 +33,8 @@ function(CodeWizard_setup_dependencies)
   #   cpmaddpackage("gh:lefticus/tools#update_build_system")
   # endif()
 
+  if(NOT TARGET  nlohmann_json::nlohmann_json)
+    cpmaddpackage("gh:nlohmann/json@3.12.0")
+  endif ()
+
 endfunction()

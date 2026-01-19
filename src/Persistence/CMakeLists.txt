@@ -1,30 +1,10 @@
-# --------------------------
-# Public interface
-# --------------------------
-add_library(Persistence INTERFACE)
+# src/Persistence/CMakeLists.txt
+file(GLOB_RECURSE SOURCES "src/*.cpp")
+add_library(Persistence STATIC ${SOURCES})
 
-target_link_libraries(Persistence
-    INTERFACE Services
-)
+target_include_directories(Persistence PUBLIC include)
+target_link_libraries(Persistence PUBLIC Core Platform)
+target_compile_features(Persistence PUBLIC cxx_std_20)
 
-target_include_directories(Persistence
-    INTERFACE
-        ${CMAKE_CURRENT_SOURCE_DIR}/include
-)
+target_link_libraries(Persistence PUBLIC nlohmann_json::nlohmann_json)
 
-# --------------------------
-# Private implementation
-# --------------------------
-add_library(PersistenceImpl STATIC
-    ${CMAKE_CURRENT_SOURCE_DIR}/internal/PersistenceImpl.cpp
-)
-
-target_include_directories(PersistenceImpl
-    PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}/internal
-)
-
-target_link_libraries(PersistenceImpl
-    PRIVATE Persistence
-    PRIVATE Services
-)

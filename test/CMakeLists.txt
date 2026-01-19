@@ -1,15 +1,10 @@
-# Top-level Catch2 tests aggregator
-cmake_minimum_required(VERSION 3.21)
-project(CodeWizardTests)
+# tests/CMakeLists.txt
+include(FetchContent)
 
-# Add each module's tests
-add_subdirectory(Bootstrap)
-add_subdirectory(Platform)
-add_subdirectory(Services)
-add_subdirectory(Project)
-add_subdirectory(Editor)
-add_subdirectory(LanguageIntelligence)
-add_subdirectory(BuildRun)
-add_subdirectory(Persistence)
-add_subdirectory(Extensibility)
-add_subdirectory(UI)
+# Discover and add all test subdirectories
+file(GLOB TEST_SUBDIRS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *)
+foreach(TEST_SUBDIR ${TEST_SUBDIRS})
+    if(IS_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/${TEST_SUBDIR})
+        add_subdirectory(${TEST_SUBDIR})
+    endif()
+endforeach()

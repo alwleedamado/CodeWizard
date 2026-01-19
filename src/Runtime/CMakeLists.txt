@@ -1,22 +1,7 @@
-add_library(Runtime INTERFACE)
+# src/Runtime/CMakeLists.txt
+file(GLOB_RECURSE SOURCES "src/*.cpp")
+add_library(Runtime STATIC ${SOURCES})
 
-target_link_libraries(Runtime
-    INTERFACE Services
-    INTERFACE BuildRun
-)
-
-target_include_directories(Runtime INTERFACE include)
-
-add_library(RuntimeImpl STATIC
-    ${CMAKE_CURRENT_SOURCE_DIR}/internal/DebuggerManager.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/internal/DebugSession.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/internal/ProcessController.cpp
-)
-
-target_include_directories(RuntimeImpl PRIVATE internal)
-
-target_link_libraries(RuntimeImpl
-    PRIVATE Runtime
-    PRIVATE Services
-    PRIVATE BuildRun
-)
+target_include_directories(Runtime PUBLIC include)
+target_link_libraries(Runtime PUBLIC Core Services)
+target_compile_features(Runtime PUBLIC cxx_std_20)
