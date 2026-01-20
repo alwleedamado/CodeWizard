@@ -19,25 +19,89 @@ std::string TextBuffer::line(uint32_t lineIndex) const
 
 Core::Position TextBuffer::positionFromOffset(size_t offset) const
 {
-  if (offset > m_text.size()) { throw std::out_of_range("Offset out of range"); }
-  auto it = std::ranges::upper_bound(m_lineEnds, offset);
-  uint32_t line = static_cast<uint32_t>(it - m_lineEnds.begin());
-  size_t lineStart = (line == 0) ? 0 : m_lineEnds[line - 1] + 1;
+  if (offset > m_text.size()) {
+    throw std::out_of_range("Offset out of range");
+  }
+
+  // Handle empty buffer
+  if (m_text.empty()) {
+    return {0, 0};
+  }
+
+  // Find the line that contains this offset
+  auto it = std::lower_bound(m_lineEnds.begin(), m_lineEnds.end(), offset);
+
+  uint32_t line;
+  size_t lineStart;
+
+  if (it == m_lineEnds.end()) {
+    // Offset is beyond all newlines → last line
+    line = static_cast<uint32_t>(m_lineEnds.size());
+    lineStart = (line == 0) ? 0 : m_lineEnds[line - 1] + 1;
+  } else if (*it == offset) {
+    // Offset is exactly at a newline → belongs to current line
+    line = static_cast<uint32_t>(it - m_lineEnds.begin());
+    lineStart = (line == 0) ? 0 : m_lineEnds[line - 1] + 1;
+  } else {
+    // Offset is before a newline → previous line
+    line = static_cast<uint32_t>(it - m_lineEnds.begin());
+    if (line == 0) {
+      lineStart = 0;
+    } else {
+      lineStart = m_lineEnds[line - 1] + 1;
+    }
+  }
+
   uint32_t character = static_cast<uint32_t>(offset - lineStart);
-  return { line, character };
+  return {line, character};
 }
 
 size_t TextBuffer::offsetFromPosition(Core::Position pos) const
 {
-  if (pos.line > m_lineEnds.size()) { throw std::out_of_range("Line out of range"); }
-  size_t lineStart = (pos.line == 0) ? 0 : m_lineEnds[pos.line - 1] + 1;
+  if (pos.line > m_lineEnds.size()) {
+    throw std::out_of_range("Line out of range");
+  }
+
+  size_t lineStart;
+  if (pos.line == 0) {
+    lineStart = 0;
+  } else {
+    // For lines beyond the last newline, use end of buffer
+    if (pos.line - 1 >= m_lineEnds.size()) {
+      lineStart = m_text.size();
+    } else {
+      lineStart = m_lineEnds[pos.line - 1] + 1;
+    }
+  }
+
   size_t offset = lineStart + pos.character;
-  if (offset > m_text.size()) { throw std::out_of_range("Character out of range"); }
+
+  // Clamp to buffer size (for positions beyond actual text)
+  if (offset > m_text.size()) {
+    offset = m_text.size();
+  }
+
   return offset;
+}
+Core::Position TextBuffer::computeEndPosition(Core::Position start, std::string_view text)
+{
+  uint32_t line = start.line;
+  uint32_t character = start.character;
+
+  for (const char c : text) {
+    if (c == '\n') {
+      line++;
+      character = 0;
+    } else {
+      character++;
+    }
+  }
+  return {line, character};
 }
 
 void TextBuffer::insertText(Core::Position pos, std::string_view text)
 {
+
   size_t offset = offsetFromPosition(pos);
   m_text.insert(offset, text);
   updateLineEnds();

@@ -1,4 +1,3 @@
-# src/LanguageIntelligence/CMakeLists.txt
 add_library(LanguageIntelligence STATIC
     src/Diagnostic.cpp
     src/LspMessage.cpp
@@ -6,10 +5,8 @@ add_library(LanguageIntelligence STATIC
 )
 
 
-target_link_libraries(LanguageIntelligence PRIVATE nlohmann_json::nlohmann_json)
-
-target_include_directories(LanguageIntelligence PUBLIC include)
-target_link_libraries(LanguageIntelligence PUBLIC Core Platform Services Editor)
+target_include_directories(LanguageIntelligence PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
+target_link_libraries(LanguageIntelligence PUBLIC Core Platform Services Editor PRIVATE json)
 target_compile_features(LanguageIntelligence PUBLIC cxx_std_20)
 
 # Linux-specific

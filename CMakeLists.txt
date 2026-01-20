@@ -61,7 +61,10 @@ find_package(Qt6 REQUIRED COMPONENTS
     Core
     Widgets
 )
-
+# ---------------------------------------------------------------------------
+# third party libs
+# ---------------------------------------------------------------------------
+add_subdirectory(libs)
 # ---------------------------------------------------------------------------
 # Subsystems
 # Order reflects *dependency direction*, not build convenience
@@ -84,7 +87,7 @@ add_subdirectory(src/UI)
 # Final executable (composition root only)
 # ---------------------------------------------------------------------------
 
-qt6_add_executable(CodeWizardApp
+add_executable(CodeWizardApp
     src/main.cpp
 )
 
@@ -92,33 +95,28 @@ if(CMAKE_BUILD_TYPE STREQUAL Release)
     add_compile_options(-Oz -flto)
     add_link_options(-flto -s)
 endif()
-if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-    add_compile_options(-mno-direct-extern-access)
-endif()
+
 
 target_link_libraries(CodeWizardApp
     PRIVATE
-        Qt6::Core
-        Qt6::Widgets
-
         # # global options
         CodeWizard_options
         # # warnings
         CodeWizard_warnings
 
         # modules
-        Core
-        Platform
-        Services
-        Extensibility
-        Project
-        Editor
-        LanguageIntelligence
-        BuildRun
+#        Core
+#        Platform
+#        Services
+#        Extensibility
+#        Project
+#        Editor
+#        LanguageIntelligence
+#        BuildRun
         Runtime
-        Packaging
-        Persistence
-        UI
+#        Packaging
+#        Persistence
+#        UI
 )
 
 set_target_properties(CodeWizardApp PROPERTIES
