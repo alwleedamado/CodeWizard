@@ -13,7 +13,7 @@ public:
   void execute() override
   {
     m_oldText = m_doc->buffer().text().substr(m_doc->buffer().offsetFromPosition(m_range.start),
-    m_doc->buffer().offsetFromPosition(m_range.end) - m_doc->buffer().offsetFromPosition(m_range.start));
+      m_doc->buffer().offsetFromPosition(m_range.end) - m_doc->buffer().offsetFromPosition(m_range.start));
     m_doc->rawRemoveText(m_range);
   }
 
@@ -51,7 +51,7 @@ Document::Document(const Platform::Path &filePath) : m_filePath(filePath) {}
 
 Result<void> Document::loadFromFile()
 {
-  if (m_filePath.native().empty()) { return failure(Core::ErrorCode::InvalidArgument, "No file path set"); }
+  if (m_filePath.native().empty()) { return failure(ErrorCode::InvalidArgument, "No file path set"); }
 
   auto result = Platform::readFile(m_filePath);
   if (!result.hasValue()) { return failure(result.error().code(), result.error().message()); }
@@ -83,14 +83,20 @@ Result<void> Document::saveAs(const Platform::Path &newPath)
   return success();
 }
 
-void Document::insertText(Core::Position pos, std::string_view text)
+void Document::insertText(Position pos, std::string_view text)
 {
   m_undoRedoStack.execute(std::make_unique<InsertAction>(this, pos, std::string(text)));
 }
 
-void Document::removeText(Core::TextRange range)
+void Document::removeText(TextRange range)
 {
   m_undoRedoStack.execute(std::make_unique<RemoveAction>(this, range));
+}
+void Document::updateText(const std::string &newText)
+{
+  m_buffer.reset();
+  insertText({ 0, 0 }, newText);
+  markModified();
 }
 
 void Document::markModified() { m_isModified = true; }
@@ -106,13 +112,13 @@ bool Document::canRedo() const noexcept { return m_undoRedoStack.canRedo(); }
 void Document::rawInsertText(Position start, const std::string &string)
 {
   m_buffer.insertText(start, string);
-  m_isModified = true;
+  markModified();
 }
 
 void Document::rawRemoveText(TextRange range)
 {
   m_buffer.removeText(range);
-  m_isModified = true;
+  markModified();
 }
 
 void Document::setChangeCallback(ChangeCallback callback) { m_changeCallback = std::move(callback); }

@@ -2,7 +2,6 @@
 #include "Platform/Path.h"
 #include <Core/Logger.h>
 #include <filesystem>
-#include <system_error>
 
 namespace fs = std::filesystem;
 using namespace CodeWizard::Core;

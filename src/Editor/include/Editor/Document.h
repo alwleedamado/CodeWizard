@@ -39,6 +39,7 @@ public:
   // Editing
   void insertText(Core::Position pos, std::string_view text);
   void removeText(Core::TextRange range);
+  void updateText(const std::string& newText);
 
   // Undo/Redo
   void undo();

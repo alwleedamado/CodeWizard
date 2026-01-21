@@ -29,6 +29,7 @@ public:
   // Mutations
   void insertText(Core::Position pos, std::string_view text);
   void removeText(Core::TextRange range);
+  void reset();
 
   // Line-based access
   [[nodiscard]] std::string_view lineView(uint32_t lineIndex) const;

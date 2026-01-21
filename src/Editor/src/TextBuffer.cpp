@@ -116,6 +116,11 @@ void TextBuffer::removeText(Core::TextRange range)
   m_text.erase(start, end - start);
   updateLineEnds();
 }
+void TextBuffer::reset()
+{
+  m_text.clear();
+  m_lineEnds.clear();
+}
 
 std::string_view TextBuffer::lineView(uint32_t lineIndex) const
 {

@@ -1,24 +1,20 @@
-// src/Logger.cpp
 #include "Core/Logger.h"
 #include <mutex>
+#include <utility>
 
 namespace CodeWizard::Core {
 
-namespace {
-    Logger::LogCallback g_callback = nullptr;
-    std::mutex g_callbackMutex;
+Logger::Logger(LogCallback logCallback) : m_callback(std::move(logCallback)) {}
+
+void Logger::setCallback(LogCallback callback)
+{
+  std::lock_guard const lock(m_mutex);
+  m_callback = std::move(callback);
 }
 
-void Logger::setGlobalCallback(LogCallback callback) {
-    std::lock_guard lock(g_callbackMutex);
-    g_callback = std::move(callback);
+void Logger::log(LogLevel level, const char *file, int line, const char *function, std::string_view message)
+{
+  std::lock_guard const lock(m_mutex);
+  if (m_callback) { m_callback(level, file, line, function, message); }
 }
-
-void Logger::log(LogLevel level, const char* file, int line, const char* function, std::string_view message) {
-    std::lock_guard lock(g_callbackMutex);
-    if (g_callback) {
-        g_callback(level, file, line, function, message);
-    }
-}
-
-} // namespace CodeWizard::Core
+}// namespace CodeWizard::Core

@@ -1,8 +1,6 @@
-// include/Runtime/Application.h
 #pragma once
 
-#include <Core/Types.h>
-#include <memory>
+#include "UI/UIApplication.h"
 
 namespace CodeWizard::Runtime {
 
@@ -13,6 +11,7 @@ public:
 
 private:
     Application() = default;
+    UI::UIApplication m_ui;
 };
 
 } // namespace CodeWizard::Runtime

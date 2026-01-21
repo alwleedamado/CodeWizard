@@ -80,6 +80,7 @@ add_subdirectory(src/BuildRun)
 add_subdirectory(src/Runtime)
 add_subdirectory(src/Packaging)
 add_subdirectory(src/Persistence)
+add_subdirectory(src/Theme)
 add_subdirectory(src/UI)
 
 
