@@ -1,151 +1,154 @@
-// src/TextBuffer.cpp
 #include "Editor/TextBuffer.h"
 #include <algorithm>
 #include <stdexcept>
 
+using namespace CodeWizard;
+
 namespace CodeWizard::Editor {
 
-TextBuffer::TextBuffer() { updateLineEnds(); }
+TextBuffer::TextBuffer(std::string text) : m_text(std::move(text)) { updateLineEnds(); }
 
-TextBuffer::TextBuffer(std::string_view text) : m_text(text) { updateLineEnds(); }
-
-std::string TextBuffer::line(uint32_t lineIndex) const
+std::string_view TextBuffer::lineView(uint32_t lineIndex) const
 {
-  if (lineIndex >= m_lineEnds.size()) { throw std::out_of_range("Line index out of range"); }
+  if (!m_lineCacheValid) { updateLineEnds(); }
+
+  if (lineIndex >= m_lineEnds.size()) { return {}; }
+
   size_t start = (lineIndex == 0) ? 0 : m_lineEnds[lineIndex - 1] + 1;
   size_t end = m_lineEnds[lineIndex];
-  return m_text.substr(start, end - start);
+
+  // Handle case where text doesn't end with newline
+  if (end > m_text.size()) { end = m_text.size(); }
+
+  return std::string_view(m_text).substr(start, end - start);
+}
+
+uint32_t TextBuffer::lineCount() const noexcept
+{
+  if (!m_lineCacheValid) { const_cast<TextBuffer *>(this)->updateLineEnds(); }
+  return static_cast<uint32_t>(m_lineEnds.size());
 }
 
 Core::Position TextBuffer::positionFromOffset(size_t offset) const
 {
-  if (offset > m_text.size()) {
-    throw std::out_of_range("Offset out of range");
-  }
+  if (offset > m_text.size()) { throw std::out_of_range("Offset out of range"); }
 
-  // Handle empty buffer
-  if (m_text.empty()) {
-    return {0, 0};
-  }
+  if (m_text.empty()) { return { 0, 0 }; }
 
-  // Find the line that contains this offset
-  auto it = std::lower_bound(m_lineEnds.begin(), m_lineEnds.end(), offset);
+  if (!m_lineCacheValid) { updateLineEnds(); }
 
-  uint32_t line;
+  // Find line containing offset
+  auto it = std::upper_bound(m_lineEnds.begin(), m_lineEnds.end(), offset);
+  uint32_t line = static_cast<uint32_t>(it - m_lineEnds.begin());
+
   size_t lineStart;
-
-  if (it == m_lineEnds.end()) {
-    // Offset is beyond all newlines → last line
-    line = static_cast<uint32_t>(m_lineEnds.size());
-    lineStart = (line == 0) ? 0 : m_lineEnds[line - 1] + 1;
-  } else if (*it == offset) {
-    // Offset is exactly at a newline → belongs to current line
-    line = static_cast<uint32_t>(it - m_lineEnds.begin());
-    lineStart = (line == 0) ? 0 : m_lineEnds[line - 1] + 1;
+  if (line == 0) {
+    lineStart = 0;
   } else {
-    // Offset is before a newline → previous line
-    line = static_cast<uint32_t>(it - m_lineEnds.begin());
-    if (line == 0) {
-      lineStart = 0;
-    } else {
-      lineStart = m_lineEnds[line - 1] + 1;
-    }
+    lineStart = m_lineEnds[line - 1] + 1;
   }
 
+  // Character is offset from line start (excluding newline)
   uint32_t character = static_cast<uint32_t>(offset - lineStart);
-  return {line, character};
+  return { line, character };
 }
 
 size_t TextBuffer::offsetFromPosition(Core::Position pos) const
 {
-  if (pos.line > m_lineEnds.size()) {
-    throw std::out_of_range("Line out of range");
-  }
+  if (!m_lineCacheValid) { const_cast<TextBuffer *>(this)->updateLineEnds(); }
+
+  if (m_text.empty()) { return 0; }
+
+  // Clamp line to valid range
+  uint32_t clampedLine = std::min(pos.line, static_cast<uint32_t>(m_lineEnds.size()));
 
   size_t lineStart;
-  if (pos.line == 0) {
+  if (clampedLine == 0) {
     lineStart = 0;
   } else {
-    // For lines beyond the last newline, use end of buffer
-    if (pos.line - 1 >= m_lineEnds.size()) {
+    if (clampedLine - 1 < m_lineEnds.size()) {
+      lineStart = m_lineEnds[clampedLine - 1] + 1;
+    } else {
       lineStart = m_text.size();
-    } else {
-      lineStart = m_lineEnds[pos.line - 1] + 1;
     }
   }
 
-  size_t offset = lineStart + pos.character;
+  // Get actual line content to validate character position
+  std::string_view lineContent = lineView(clampedLine);
+  uint32_t clampedChar = std::min(pos.character, static_cast<uint32_t>(lineContent.length()));
 
-  // Clamp to buffer size (for positions beyond actual text)
-  if (offset > m_text.size()) {
-    offset = m_text.size();
-  }
-
-  return offset;
-}
-Core::Position TextBuffer::computeEndPosition(Core::Position start, std::string_view text)
-{
-  uint32_t line = start.line;
-  uint32_t character = start.character;
-
-  for (const char c : text) {
-    if (c == '\n') {
-      line++;
-      character = 0;
-    } else {
-      character++;
-    }
-  }
-  return {line, character};
+  size_t offset = lineStart + clampedChar;
+  return std::min(offset, m_text.size());
 }
 
-void TextBuffer::insertText(Core::Position pos, std::string_view text)
+void TextBuffer::insertAt(size_t offset, std::string_view text)
 {
+  if (offset > m_text.size()) { throw std::out_of_range("Insert offset out of range"); }
 
-  size_t offset = offsetFromPosition(pos);
   m_text.insert(offset, text);
-  updateLineEnds();
+  invalidateLineCache();
 }
 
-void TextBuffer::removeText(Core::TextRange range)
+void TextBuffer::removeRange(size_t startOffset, size_t endOffset)
 {
-  if (!range.valid()) return;
-  size_t start = offsetFromPosition(range.start);
-  size_t end = offsetFromPosition(range.end);
-  if (end > m_text.size()) end = m_text.size();
-  m_text.erase(start, end - start);
-  updateLineEnds();
+  if (startOffset > endOffset || endOffset > m_text.size()) { throw std::out_of_range("Invalid range"); }
+
+  if (startOffset == endOffset) { return; }
+
+  m_text.erase(startOffset, endOffset - startOffset);
+  invalidateLineCache();
 }
-void TextBuffer::reset()
+
+void TextBuffer::setText(std::string_view text)
 {
-  m_text.clear();
+  m_text.assign(text);
+  invalidateLineCache();
+}
+
+std::string_view TextBuffer::getLine(uint32_t line) const { return lineView(line); }
+
+size_t TextBuffer::getLineStartOffset(uint32_t line) const
+{
+  if (!m_lineCacheValid) { updateLineEnds(); }
+
+  if (line == 0) { return 0; }
+
+  if (line - 1 >= m_lineEnds.size()) { return m_text.size(); }
+
+  return m_lineEnds[line - 1] + 1;
+}
+
+size_t TextBuffer::getLineEndOffset(uint32_t line) const
+{
+  if (!m_lineCacheValid) { updateLineEnds(); }
+
+  if (line >= m_lineEnds.size()) { return m_text.size(); }
+
+  return m_lineEnds[line];
+}
+
+void TextBuffer::updateLineEnds() const
+{
   m_lineEnds.clear();
-}
 
-std::string_view TextBuffer::lineView(uint32_t lineIndex) const
-{
-  if (lineIndex >= m_lineEnds.size()) {
-    static std::string_view empty;
-    return empty;
-  }
-  size_t start = (lineIndex == 0) ? 0 : m_lineEnds[lineIndex - 1] + 1;
-  size_t end = m_lineEnds[lineIndex];
-  return std::string_view(m_text).substr(start, end - start);
-}
-
-void TextBuffer::updateLineEnds()
-{
-  m_lineEnds.clear();
   if (m_text.empty()) {
-    m_lineEnds.push_back(0);// Empty buffer has one empty line
+    m_lineCacheValid = true;
     return;
   }
+
   size_t pos = 0;
   while ((pos = m_text.find('\n', pos)) != std::string::npos) {
     m_lineEnds.push_back(pos);
     pos++;
   }
+
+  // Always add end of buffer as final line boundary
+  // This ensures line count = m_lineEnds.size()
   if (m_text.back() != '\n') { m_lineEnds.push_back(m_text.size()); }
+
+  m_lineCacheValid = true;
 }
+
+void TextBuffer::invalidateLineCache() const { m_lineCacheValid = false; }
 
 }// namespace CodeWizard::Editor

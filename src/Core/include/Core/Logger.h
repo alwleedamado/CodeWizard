@@ -44,6 +44,7 @@ public:
 
   void setCallback(LogCallback callback);
   void log(LogLevel level, const char *file, int line, const char *function, std::string_view message);
+  void error(const char* str, const std::string& message);
 
 private:
   LogCallback m_callback = nullptr;

@@ -17,4 +17,9 @@ void Logger::log(LogLevel level, const char *file, int line, const char *functio
   std::lock_guard const lock(m_mutex);
   if (m_callback) { m_callback(level, file, line, function, message); }
 }
+void Logger::error(const char *str, const std::string &message)
+{
+  std::lock_guard const lock(m_mutex);
+  if (m_callback) { m_callback(LogLevel::Error, "",0, "", message); }
+}
 }// namespace CodeWizard::Core

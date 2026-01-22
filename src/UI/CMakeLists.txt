@@ -3,6 +3,7 @@ find_package(Qt6 REQUIRED COMPONENTS Widgets)
 
 file(GLOB_RECURSE SOURCES "src/*.cpp")
 qt6_wrap_cpp(UI_MOC_SRCS
+    include/UI/CodeTextEdit.h
     include/UI/MainWindow.h
     include/UI/EditorTab.h
     include/UI/CommandBar.h

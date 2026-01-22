@@ -1,44 +1,43 @@
 // include/Editor/TextBuffer.h
 #pragma once
 
-#include "Core/Undo.h"
-
-
-#include <Core/Result.h>
 #include <Core/Types.h>
 #include <string>
 #include <vector>
+#include <string_view>
 
 namespace CodeWizard::Editor {
 
-class TextBuffer
-{
+class TextBuffer {
 public:
-  TextBuffer();
-  explicit TextBuffer(std::string_view text);
+  TextBuffer() = default;
+  explicit TextBuffer(std::string text);
 
   // Text access
-  [[nodiscard]] const std::string &text() const noexcept { return m_text; }
-  [[nodiscard]] std::string line(uint32_t lineIndex) const;
-  [[nodiscard]] uint32_t lineCount() const noexcept { return static_cast<uint32_t>(m_lineEnds.size()); }
+  [[nodiscard]] const std::string& text() const noexcept { return m_text; }
+  [[nodiscard]] std::string_view lineView(uint32_t lineIndex) const;
+  [[nodiscard]] uint32_t lineCount() const noexcept;
 
-  // Position utilities
+  // Position/offset conversion
   [[nodiscard]] Core::Position positionFromOffset(size_t offset) const;
   [[nodiscard]] size_t offsetFromPosition(Core::Position pos) const;
-  [[nodiscard]] static Core::Position computeEndPosition(Core::Position start, std::string_view text);
-  // Mutations
-  void insertText(Core::Position pos, std::string_view text);
-  void removeText(Core::TextRange range);
-  void reset();
+
+  // Text modification (incremental)
+  void insertAt(size_t offset, std::string_view text);
+  void removeRange(size_t startOffset, size_t endOffset);
+  void setText(std::string_view text);
 
   // Line-based access
-  [[nodiscard]] std::string_view lineView(uint32_t lineIndex) const;
-
+  [[nodiscard]] std::string_view getLine(uint32_t line) const;
+  [[nodiscard]] size_t getLineStartOffset(uint32_t line) const;
+  [[nodiscard]] size_t getLineEndOffset(uint32_t line) const;
 private:
-  void updateLineEnds();
+  void updateLineEnds() const;
+  void invalidateLineCache() const;
+
   std::string m_text;
-  std::vector<size_t> m_lineEnds;// offsets of '\n' characters
-  Core::UndoRedoStack m_undoRedoStack;
+  mutable std::vector<size_t> m_lineEnds;
+  mutable bool m_lineCacheValid = false;
 };
 
-}// namespace CodeWizard::Editor
+} // namespace CodeWizard::Editor

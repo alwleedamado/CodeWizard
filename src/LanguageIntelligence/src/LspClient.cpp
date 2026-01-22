@@ -144,10 +144,10 @@ void LspClient::changeDocument(const Editor::Document& document, const Editor::C
     nlohmann::json contentChange;
     if (!change.oldText.empty()) {
         // Replacement or deletion
-        contentChange["range"]["start"]["line"] = change.range.start.line;
-        contentChange["range"]["start"]["character"] = change.range.start.character;
-        contentChange["range"]["end"]["line"] = change.range.end.line;
-        contentChange["range"]["end"]["character"] = change.range.end.character;
+        contentChange["range"]["start"]["line"] = change.oldRange.start.line;
+        contentChange["range"]["start"]["character"] = change.oldRange.start.character;
+        contentChange["range"]["end"]["line"] = change.oldRange.end.line;
+        contentChange["range"]["end"]["character"] = change.oldRange.end.character;
     }
     contentChange["text"] = change.newText;
     msg.params["contentChanges"] = std::vector<nlohmann::json>{contentChange};

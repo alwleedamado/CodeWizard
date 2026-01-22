@@ -9,8 +9,8 @@ namespace CodeWizard::Platform {
 
 class Path {
 public:
-    explicit Path(std::string_view path = "");
-
+    explicit Path(std::string_view path);
+    Path() = default;
     [[nodiscard]] bool isAbsolute() const noexcept;
     [[nodiscard]] bool isRelative() const noexcept;
     [[nodiscard]] bool exists() const noexcept;

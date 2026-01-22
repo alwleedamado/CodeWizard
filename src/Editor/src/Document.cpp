@@ -1,126 +1,225 @@
-// src/Document.cpp
+// src/Editor/Document.cpp
 #include "Editor/Document.h"
+#include <Core/Logger.h>
 #include <Platform/FileSystem.h>
-#include <Services/GlobalServices.h>
-#include <algorithm>
+
+using namespace CodeWizard;
 
 namespace CodeWizard::Editor {
-class RemoveAction final : public Core::UndoableAction
+
+Document::Document(const Platform::Path &filePath) : m_filePath(filePath)
 {
-public:
-  RemoveAction(Document *doc, Core::TextRange r) : m_doc(doc), m_range(r) {}
-
-  void execute() override
-  {
-    m_oldText = m_doc->buffer().text().substr(m_doc->buffer().offsetFromPosition(m_range.start),
-      m_doc->buffer().offsetFromPosition(m_range.end) - m_doc->buffer().offsetFromPosition(m_range.start));
-    m_doc->rawRemoveText(m_range);
+  if (!filePath.filename().empty()) {
+    auto result = loadFromFile();
+    // if (!result.hasValue()) { Core::Logger::error("Failed to load file: {}", filePath.native()); }
   }
-
-  void undo() override { m_doc->rawInsertText(m_range.start, m_oldText); }
-
-private:
-  Document *m_doc;
-  Core::TextRange m_range;
-  std::string m_oldText;
-};
-
-class InsertAction final : public Core::UndoableAction
-{
-public:
-  InsertAction(Document *doc, Core::Position p, std::string t) : m_doc(doc), m_pos(p), m_text(std::move(t)) {}
-
-  void execute() override
-  {
-    m_endPos = TextBuffer::computeEndPosition(m_pos, m_text);
-    m_doc->rawInsertText(m_pos, m_text);
-  }
-
-  void undo() override { m_doc->rawRemoveText({ m_pos, m_endPos }); }
-
-private:
-  Document *m_doc;
-  Position m_pos;
-  Position m_endPos;
-  std::string m_text;
-};
-
-Document::Document() = default;
-
-Document::Document(const Platform::Path &filePath) : m_filePath(filePath) {}
+}
 
 Result<void> Document::loadFromFile()
 {
-  if (m_filePath.native().empty()) { return failure(ErrorCode::InvalidArgument, "No file path set"); }
+  if (m_filePath.filename().empty()) { return failure(ErrorCode::InvalidArgument, "No file path"); }
 
   auto result = Platform::readFile(m_filePath);
   if (!result.hasValue()) { return failure(result.error().code(), result.error().message()); }
 
-  m_buffer = TextBuffer(result.value());
+  m_buffer.setText(result.value());
   m_isModified = false;
-  m_undoRedoStack.clear();
   return success();
 }
 
-Result<void> Document::saveToFile()
+Result<void> Document::saveToFile() const
 {
-  if (m_filePath.native().empty()) { return failure(Core::ErrorCode::InvalidArgument, "No file path set"); }
+  if (m_filePath.filename().empty()) { return failure(ErrorCode::InvalidArgument, "No file path"); }
 
   auto result = Platform::writeFile(m_filePath, m_buffer.text());
   if (!result.hasValue()) { return failure(result.error().code(), result.error().message()); }
 
-  m_isModified = false;
   return success();
 }
 
-Result<void> Document::saveAs(const Platform::Path &newPath)
+void Document::insertText(Core::Position pos, std::string_view text)
 {
-  auto result = Platform::writeFile(newPath, m_buffer.text());
-  if (!result.hasValue()) { return failure(result.error().code(), result.error().message()); }
+  class InsertAction : public Core::UndoableAction
+  {
+  public:
+    InsertAction(Document *doc, Core::Position p, std::string t) : m_doc(doc), m_pos(p), m_text(std::move(t)) {}
 
-  m_filePath = newPath;
-  m_isModified = false;
-  return success();
+    void execute() override { m_doc->rawInsertText(m_pos, m_text); }
+
+    void undo() override
+    {
+      // Calculate end position after insertion
+      size_t startOffset = m_doc->m_buffer.offsetFromPosition(m_pos);
+      size_t endOffset = startOffset + m_text.size();
+      Core::Position endPos = m_doc->m_buffer.positionFromOffset(endOffset);
+      m_doc->rawRemoveText({ m_pos, endPos });
+    }
+
+  private:
+    Document *m_doc;
+    Core::Position m_pos;
+    std::string m_text;
+  };
+
+  m_undoRedo.execute(std::make_unique<InsertAction>(this, pos, std::string(text)));
 }
 
-void Document::insertText(Position pos, std::string_view text)
+void Document::removeText(Core::TextRange range)
 {
-  m_undoRedoStack.execute(std::make_unique<InsertAction>(this, pos, std::string(text)));
+  if (!range.valid()) return;
+
+  // Get exact text being removed
+  size_t startOffset = m_buffer.offsetFromPosition(range.start);
+  size_t endOffset = m_buffer.offsetFromPosition(range.end);
+
+  // Clamp to buffer bounds
+  endOffset = std::min(endOffset, m_buffer.text().size());
+  startOffset = std::min(startOffset, endOffset);
+
+  std::string oldText(m_buffer.text().substr(startOffset, endOffset - startOffset));
+
+  class RemoveAction : public Core::UndoableAction {
+  public:
+    RemoveAction(Document* doc, Core::TextRange r, std::string oldText)
+        : m_doc(doc), m_range(r), m_oldText(std::move(oldText)) {}
+
+    void execute() override {
+      m_doc->rawRemoveText(m_range);
+    }
+
+    void undo() override {
+      m_doc->rawInsertText(m_range.start, m_oldText);
+    }
+
+  private:
+    Document* m_doc;
+    Core::TextRange m_range;
+    std::string m_oldText;
+  };
+
+  m_undoRedo.execute(std::make_unique<RemoveAction>(this, range, std::move(oldText)));
+
 }
 
-void Document::removeText(TextRange range)
+void Document::replaceText(std::string_view newText)
 {
-  m_undoRedoStack.execute(std::make_unique<RemoveAction>(this, range));
+  class ReplaceAction : public Core::UndoableAction
+  {
+  public:
+    ReplaceAction(Document *doc, std::string oldText, std::string newText)
+      : m_doc(doc), m_oldText(std::move(oldText)), m_newText(std::move(newText))
+    {}
+
+    void execute() override { m_doc->rawReplaceText(m_newText); }
+
+    void undo() override { m_doc->rawReplaceText(m_oldText); }
+
+  private:
+    Document *m_doc;
+    std::string m_oldText;
+    std::string m_newText;
+  };
+
+  std::string oldText = m_buffer.text();
+  m_undoRedo.execute(std::make_unique<ReplaceAction>(this, oldText, std::string(newText)));
 }
-void Document::updateText(const std::string &newText)
+
+void Document::rawInsertText(Core::Position pos, std::string_view text)
 {
-  m_buffer.reset();
-  insertText({ 0, 0 }, newText);
+  size_t offset = m_buffer.offsetFromPosition(pos);
+  m_buffer.insertAt(offset, text);
+  Position newEndPos = m_buffer.positionFromOffset(offset + text.size());
   markModified();
+
+  if (m_changeCallback) {
+    Change change;
+    change.oldRange = { pos, pos };
+    change.oldLineEndOffset = offset;
+    change.oldLineEndOffset = offset;
+    change.oldText = "";
+    change.newText = std::string(text);
+    change.newRange = {pos, newEndPos};
+    change.newLineEndOffset = offset;
+    change.newLineEndOffset = offset + text.size();
+    m_changeCallback(change);
+  }
 }
 
-void Document::markModified() { m_isModified = true; }
-
-void Document::undo() { m_undoRedoStack.undo(); }
-
-void Document::redo() { m_undoRedoStack.redo(); }
-
-bool Document::canUndo() const noexcept { return m_undoRedoStack.canUndo(); }
-
-bool Document::canRedo() const noexcept { return m_undoRedoStack.canRedo(); }
-
-void Document::rawInsertText(Position start, const std::string &string)
+void Document::rawRemoveText(Core::TextRange range)
 {
-  m_buffer.insertText(start, string);
+  if (!range.valid()) return;
+
+  size_t start = m_buffer.offsetFromPosition(range.start);
+  size_t end = m_buffer.offsetFromPosition(range.end);
+  std::string oldText = m_buffer.text().substr(start, end - start);
+  m_buffer.removeRange(start, end);
+
   markModified();
+
+  if (m_changeCallback) {
+    Change change;
+    change.oldRange = range;
+    change.oldText = oldText;
+    change.oldLineStartOffset = start;
+    change.oldLineEndOffset = end;
+    change.newText = "";
+    change.newRange = {range.start, range.start};
+    change.newLineStartOffset = start;
+    change.newLineEndOffset = start;
+    m_changeCallback(change);
+  }
 }
 
-void Document::rawRemoveText(TextRange range)
+void Document::rawReplaceText(std::string_view newText)
 {
-  m_buffer.removeText(range);
+  m_buffer.setText(newText);
   markModified();
+
+  if (m_changeCallback) {
+    Change change;
+    change.oldRange = { { 0, 0 }, m_buffer.positionFromOffset(m_buffer.text().size()) };
+    change.oldText = "";// Not used for full replace
+    change.newText = std::string(newText);
+    m_changeCallback(change);
+  }
 }
 
-void Document::setChangeCallback(ChangeCallback callback) { m_changeCallback = std::move(callback); }
+void Document::undo()
+{
+  if (!m_undoRedo.canUndo()) return;
+
+  // Temporarily disable callback to avoid feedback loop
+  auto oldCallback = std::move(m_changeCallback);
+  m_changeCallback = nullptr;
+
+  m_undoRedo.undo();
+
+  // Restore callback and trigger update
+  m_changeCallback = std::move(oldCallback);
+  if (m_changeCallback) {
+    Change change;
+    change.oldRange = { { 0, 0 }, m_buffer.positionFromOffset(m_buffer.text().size()) };
+    change.newText = m_buffer.text();
+    m_changeCallback(change);
+  }
+}
+
+void Document::redo()
+{
+  if (!m_undoRedo.canRedo()) return;
+
+  auto oldCallback = std::move(m_changeCallback);
+  m_changeCallback = nullptr;
+
+  m_undoRedo.redo();
+
+  m_changeCallback = std::move(oldCallback);
+  if (m_changeCallback) {
+    Change change;
+    change.oldRange = { { 0, 0 }, m_buffer.positionFromOffset(m_buffer.text().size()) };
+    change.newText = m_buffer.text();
+    m_changeCallback(change);
+  }
+}
 
 }// namespace CodeWizard::Editor
