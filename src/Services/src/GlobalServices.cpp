@@ -3,7 +3,6 @@
 #include <Core/Config.h>
 #include <Core/EventBus.h>
 #include <Core/Logger.h>
-#include <Core/Task.h>
 #include <memory>
 
 namespace CodeWizard::Services {
@@ -18,8 +17,6 @@ void initializeDefaultServices()
 
   ServiceRegistry::registerService<LoggerService>(std::make_unique<LoggerService>());
   ServiceRegistry::registerService<ConfigService>(std::make_unique<ConfigService>());
-  ServiceRegistry::registerService<EventBusService>(std::make_unique<EventBusService>());
-  ServiceRegistry::registerService<TaskSchedulerService>(std::make_unique<TaskSchedulerService>());
 
   g_initialized = true;
 }
@@ -31,9 +28,5 @@ LoggerService *getLogger()
 }
 
 ConfigService *getConfig() { return ServiceRegistry::getService<ConfigService>(); }
-
-EventBusService *getEventBus() { return ServiceRegistry::getService<EventBusService>(); }
-
-TaskSchedulerService *getTaskScheduler() { return ServiceRegistry::getService<TaskSchedulerService>(); }
 
 }// namespace CodeWizard::Services

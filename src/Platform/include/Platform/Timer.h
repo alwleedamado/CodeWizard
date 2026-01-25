@@ -1,31 +1,47 @@
-// include/Platform/Timer.h
 #pragma once
 
-#include <Core/Types.h>
-#include <chrono>
 #include <functional>
 #include <memory>
+#include <chrono>
 
-namespace CodeWizard::Platform {
+namespace CodeWizard::Core {
 
 class Timer {
 public:
-    using Callback = std::function<void()>;
-    using Duration = std::chrono::milliseconds;
+  using Clock = std::chrono::steady_clock;
+  using TimePoint = Clock::time_point;
+  using Duration = Clock::duration;
 
-    explicit Timer(Duration interval, Callback callback);
-    ~Timer();
+  // Create timer with delay
+  template<typename Rep, typename Period>
+  static std::unique_ptr<Timer> singleShot(
+      const std::chrono::duration<Rep, Period>& delay,
+      std::function<void()> callback
+  );
 
-    void start();
-    void stop();
-    [[nodiscard]] bool isActive() const noexcept;
+  // Create repeating timer
+  template<typename Rep, typename Period>
+  static std::unique_ptr<Timer> repeat(
+      const std::chrono::duration<Rep, Period>& interval,
+      std::function<void()> callback
+  );
 
-    void setInterval(Duration interval);
-    [[nodiscard]] Duration interval() const noexcept;
+  ~Timer();
 
+  // Control methods
+  void start();
+  void stop();
+  [[nodiscard]] bool isActive() const;
+
+  // For repeating timers
+  void setRepeatInterval(std::chrono::milliseconds interval);
+  [[nodiscard]] std::chrono::milliseconds repeatInterval() const;
+
+  Timer(Duration delay, std::function<void()> callback, bool repeating);
 private:
-    struct Impl;
-    std::unique_ptr<Impl> m_impl;
+
+  struct Impl;
+  std::unique_ptr<Impl> m_impl;
 };
 
-} // namespace CodeWizard::Platform
+} // namespace CodeWizard::Core

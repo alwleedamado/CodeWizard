@@ -30,15 +30,7 @@ Result<BuildResult> BuildSystem::buildSync() {
 }
 
 void BuildSystem::buildAsync(BuildCallback callback) {
-    auto* scheduler = Services::getTaskScheduler();
-    scheduler->schedule([this, cb = std::move(callback)]() {
-        auto result = buildSync();
-        if (result.hasValue()) {
-            cb(result.value());
-        } else {
-            cb(BuildResult{false, "", result.error().message()});
-        }
-    });
+
 }
 
 } // namespace CodeWizard::BuildRun
