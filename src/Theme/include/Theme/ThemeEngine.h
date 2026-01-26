@@ -39,6 +39,10 @@ struct Colors
   QColor buttonBackground;
   QColor buttonForeground;
   QColor buttonHover;
+  QColor selectionBackground;
+  QColor selectionForeground;
+  QGradient::Preset lineNumberBackground;
+  QColor lineNumberForeground;
 };
 
 struct Fonts

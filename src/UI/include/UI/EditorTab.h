@@ -1,45 +1,46 @@
 #pragma once
 
-#include "UI/CodeTextEdit.h"
-#include <Editor/Document.h>
-#include <LanguageIntelligence/Diagnostic.h>
-#include <QPlainTextEdit>
+#include "CodeTextEdit.h"
+
+
+#include "Platform/Path.h"
+#include <QVBoxLayout>
 #include <QWidget>
 
 namespace CodeWizard::UI {
 
-class EditorTab final : public QWidget
-{
-  Q_OBJECT
+class EditorTab final : public QWidget {
+    Q_OBJECT
 
 public:
-  explicit EditorTab(Editor::Document *document, QWidget *parent = nullptr);
+    explicit EditorTab(QWidget* parent = nullptr);
+    ~EditorTab() override = default;
 
-  [[nodiscard]] QPlainTextEdit *textEdit() const { return m_codeEdit; }
-  [[nodiscard]] const Editor::Document *document() const { return m_document; }
+    // File operations
+    bool loadFromFile(const QString& filepath);
+    bool saveToFile(const QString& filepath);
+
+    [[nodiscard]] bool isModified() const { return m_editor->document()->isModified(); }
+    void setModified(bool modified) { m_editor->document()->setModified(modified); }
+    [[nodiscard]] QString getFilePath() const { return m_filePath; }
+    void setFilePath(const QString& filepath) { m_filePath = filepath; }
+
+    [[nodiscard]] CodeTextEdit* getEditor() const { return m_editor; }
 
 signals:
-  void modificationChanged(bool modified);
-  void diagnosticsReceived(const QList<LanguageIntelligence::Diagnostic> &diagnostics);
-  void cursorPositionChanged(Core::Position pos);
+    void modificationChanged(bool modified);
+    void filePathChanged(const QString& filepath);
 
 private slots:
-  void onUndoAvailableChanged();
-  void onRedoAvailableChanged();
-  void onUserInput(const QString &text, int position);
-  void onBackspacePressed(int position);
-  void onDeletePressed(int offset);
-  void onEnterPressed(int position);
-  void onCutRequested(int start, int end);
-  void onPasteRequested(int position);
-  void onCursorPositionChanged();
+    void onModificationChanged(bool modified);
+    void onFilePathChanged(const QString& path);
 private:
-  void onDocumentChanged(const Editor::Change& change);
-  static int calculateNewCursorPos(int oldPos, size_t removeStart, size_t removeEnd, size_t insertLength);
-  void updateCursorPosition();
-  CodeTextEdit * m_codeEdit = nullptr;
-  Editor::Document* m_document = nullptr;
-  Core::Position m_currentCursorPosition;
+    static bool isFileTooLarge(const CodeWizard::Platform::Path& filePath);
+    static bool hasVeryLongLine(const CodeWizard::Platform::Path& filePath, int maxLineLength = 100000);
+
+    CodeTextEdit* m_editor = nullptr;
+    QString m_filePath;
+    QVBoxLayout* m_layout = nullptr;
 };
 
-}// namespace CodeWizard::UI
+} // namespace CodeWizard::UI

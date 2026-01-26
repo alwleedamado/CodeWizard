@@ -1,5 +1,6 @@
 #include "UI/MainWindow.h"
 
+#include "Platform/FileSystem.h"
 #include "Theme/ThemeEngine.h"
 #include "UI/CommandBar.h"
 #include "UI/ProjectView.h"
@@ -38,18 +39,43 @@ void MainWindow::setupUi()
   m_tabWidget->setMovable(true);
   m_statusBar = new StatusBar(this);
 
-  // Menu
-  auto *fileMenu = m_menuBar->addMenu("&File");
-  fileMenu->addAction("&New", this, &MainWindow::onNewFile);
-  fileMenu->addAction("&Open File...", this, &MainWindow::onOpenFile);
-  fileMenu->addAction("Open &Project...", this, &MainWindow::onOpenProject);
+  // File menu
+  QMenu* fileMenu = m_menuBar->addMenu(tr("&File"));
+
+  m_newFileAction = new QAction(tr("&New"), this);
+  m_newFileAction->setShortcut(QKeySequence::New);
+  connect(m_newFileAction, &QAction::triggered, this, &MainWindow::onNewFile);
+  fileMenu->addAction(m_newFileAction);
+
+  m_openFileAction = new QAction(tr("&Open..."), this);
+  m_openFileAction->setShortcut(QKeySequence::Open);
+  connect(m_openFileAction, &QAction::triggered, this, &MainWindow::onOpenFile);
+  fileMenu->addAction(m_openFileAction);
+
   fileMenu->addSeparator();
-  fileMenu->addAction("&Quit", qApp, &QApplication::quit);
+
+  m_saveFileAction = new QAction(tr("&Save"), this);
+  m_saveFileAction->setShortcut(QKeySequence::Save);
+  m_saveFileAction->setEnabled(false);
+  connect(m_saveFileAction, &QAction::triggered, this, &MainWindow::onSaveFile);
+  fileMenu->addAction(m_saveFileAction);
+
+  m_saveFileAsAction = new QAction(tr("Save &As..."), this);
+  m_saveFileAsAction->setShortcut(QKeySequence::SaveAs);
+  connect(m_saveFileAsAction, &QAction::triggered, this, &MainWindow::onSaveFileAs);
+  fileMenu->addAction(m_saveFileAsAction);
+
+  fileMenu->addSeparator();
+
+  m_closeTabAction = new QAction(tr("&Close Tab"), this);
+  m_closeTabAction->setShortcut(QKeySequence::Close);
+  connect(m_closeTabAction, &QAction::triggered, this, &MainWindow::onCloseTab);
+  fileMenu->addAction(m_closeTabAction);
 
   // Connections
   connect(m_commandBar, &CommandBar::commandSubmitted, this, &MainWindow::onCommandSubmitted);
   connect(m_sidebar, &Sidebar::fileOpened, this, &MainWindow::onFileOpenedFromSidebar);
-  connect(m_tabWidget, &QTabWidget::tabCloseRequested, this, &MainWindow::onTabCloseRequested);
+  connect(m_tabWidget, &QTabWidget::tabCloseRequested, this, &MainWindow::onCloseTab);
   connect(&Theme::ThemeEngine::instance(), &Theme::ThemeEngine::themeChanged, this, &MainWindow::onThemeChanged);
   setupLayout();
   setStatusBar(m_statusBar);
@@ -81,35 +107,87 @@ void MainWindow::setupLayout()
 
 void MainWindow::onNewFile()
 {
-  auto *doc = new Editor::Document;
-  auto *tab = createTab(doc);
-  m_tabWidget->setCurrentWidget(tab);
-}
+  auto* newTab = new EditorTab(this);
+  newTab->setFilePath(""); // Unsaved file
 
-void MainWindow::onOpenFile()
-{
-  QString path = QFileDialog::getOpenFileName(this, "Open File");
-  if (!path.isEmpty()) { openFile(path); }
+  connect(newTab, &EditorTab::modificationChanged,
+          this, &MainWindow::onModificationChanged);
+  connect(newTab, &EditorTab::filePathChanged,
+          this, &MainWindow::onFilePathChanged);
+
+  int index = m_tabWidget->addTab(newTab, tr("Untitled"));
+  m_tabWidget->setCurrentIndex(index);
+
+  // Enable save actions for new files
+  m_saveFileAction->setEnabled(true);
+  m_saveFileAsAction->setEnabled(true);
 }
 
 void MainWindow::onOpenProject()
 {
-  QString path = QFileDialog::getExistingDirectory(this, "Open Project");
+  const QString path = QFileDialog::getExistingDirectory(this, "Open Project");
   if (!path.isEmpty()) { openProject(path); }
 }
 
-void MainWindow::openFile(const QString &filePath)
-{
-  auto *doc = new Editor::Document(Platform::Path(filePath.toStdString()));
-  if (!doc->loadFromFile().hasValue()) {
-    QMessageBox::warning(this, "Error", "Failed to load file");
-    delete doc;
+void MainWindow::onOpenFile() {
+  // Use Qt's file dialog for UI, but Platform API for actual file operations
+  QString filePath = QFileDialog::getOpenFileName(
+      this, tr("Open File"), getCurrentWorkingDirectory().native().c_str(),
+      tr("All Files (*);;C++ Files (*.cpp *.h *.hpp);;CMake Files (CMakeLists.txt)"));
+
+  if (filePath.isEmpty()) return;
+
+  EditorTab* newTab = new EditorTab(this);
+
+  if (newTab->loadFromFile(filePath)) {
+    connect(newTab, &EditorTab::modificationChanged,
+            this, &MainWindow::onModificationChanged);
+    connect(newTab, &EditorTab::filePathChanged,
+            this, &MainWindow::onFilePathChanged);
+
+    Platform::Path path(filePath.toStdString());
+    QString fileName = QString::fromStdString(path.filename());
+    int index = m_tabWidget->addTab(newTab, fileName);
+    m_tabWidget->setCurrentIndex(index);
+
+    m_saveFileAction->setEnabled(true);
+    m_saveFileAsAction->setEnabled(true);
+  } else {
+    delete newTab;
+  }
+}
+void MainWindow::onSaveFile() {
+  EditorTab* tab = currentTab();
+  if (!tab) return;
+
+  QString filePath = tab->getFilePath();
+  if (filePath.isEmpty()) {
+    onSaveFileAs();
     return;
   }
-  auto *tab = createTab(doc);
-  m_tabWidget->setCurrentWidget(tab);
+
+  if (tab->saveToFile(filePath)) {
+    updateWindowTitle();
+  }
 }
 
+void MainWindow::onSaveFileAs() {
+  EditorTab* tab = currentTab();
+  if (!tab) return;
+
+  QString suggestedName = tab->getFilePath().isEmpty() ?
+      "untitled.txt" : QString::fromStdString(Platform::Path(tab->getFilePath().toStdString()).filename());
+
+  QString filePath = getSaveFileName(suggestedName);
+  if (filePath.isEmpty()) return;
+
+  if (tab->saveToFile(filePath)) {
+    Platform::Path path(filePath.toStdString());
+    QString fileName = QString::fromStdString(path.filename());
+    m_tabWidget->setTabText(m_tabWidget->currentIndex(), fileName);
+    updateWindowTitle();
+  }
+}
 void MainWindow::openProject(const QString &projectPath)
 {
   m_currentProjectPath = projectPath;
@@ -122,51 +200,117 @@ void MainWindow::onCommandSubmitted(const QString &command)
   m_statusBar->showMessage(QString("Command: %1").arg(command), 2000);
 }
 
-void MainWindow::onFileOpenedFromSidebar(const QString &filePath) { openFile(filePath); }
-
-EditorTab *MainWindow::createTab(Editor::Document *doc)
+void MainWindow::onFileOpenedFromSidebar(const QString &filePath)
 {
-  auto *tab = new EditorTab(doc, this);
-  QString title = doc->isUntitled() ? "Untitled" : QString::fromStdString(doc->filePath().filename());
-  m_tabWidget->addTab(tab, title);
+  EditorTab* newTab = new EditorTab(this);
 
-  connect(tab, &EditorTab::modificationChanged, this, &MainWindow::onModificationChanged);
-  connect(tab, &EditorTab::diagnosticsReceived, this, &MainWindow::onDiagnosticsReceived);
+  if (newTab->loadFromFile(filePath)) {
+    connect(newTab, &EditorTab::modificationChanged,
+            this, &MainWindow::onModificationChanged);
+    connect(newTab, &EditorTab::filePathChanged,
+            this, &MainWindow::onFilePathChanged);
 
-  m_docToTab[doc] = tab;
-  m_currentDocument = doc;
-  return tab;
-}
-void MainWindow::updateTabTitle(EditorTab *tab) {}
+    Platform::Path path(filePath.toStdString());
+    QString fileName = QString::fromStdString(path.filename());
+    int index = m_tabWidget->addTab(newTab, fileName);
+    m_tabWidget->setCurrentIndex(index);
 
-void MainWindow::onTabCloseRequested(int index)
-{
-  auto *widget = m_tabWidget->widget(index);
-  auto it = m_docToTab.key(static_cast<EditorTab *>(widget));
-  if (it) {
-    m_docToTab.remove(it);
-    delete it;
+    m_saveFileAction->setEnabled(true);
+    m_saveFileAsAction->setEnabled(true);
+  } else {
+    delete newTab;
   }
-  m_tabWidget->removeTab(index);
 }
 
-void MainWindow::onModificationChanged(bool modified)
-{
-  auto *tab = qobject_cast<EditorTab *>(sender());
-  if (!tab) return;
+void MainWindow::onFilePathChanged(const QString& filepath) {
+  EditorTab* senderTab = qobject_cast<EditorTab*>(sender());
+  if (!senderTab) return;
 
-  auto *it = m_docToTab.key(tab);
-  if (!it) return;
+  int index = m_tabWidget->indexOf(senderTab);
+  if (index == -1) return;
 
-  QString const title = it->isUntitled() ? "Untitled[*]" : QString::fromStdString(it->filePath().filename() + "[*]");
-  m_tabWidget->setTabText(m_tabWidget->indexOf(tab), title);
-  m_tabWidget->setWindowModified(modified);
+  if (filepath.isEmpty()) {
+    m_tabWidget->setTabText(index, tr("Untitled"));
+  } else {
+    Platform::Path path(filepath.toStdString());
+    QString fileName = QString::fromStdString(path.filename());
+    m_tabWidget->setTabText(index, fileName);
+  }
+
+  updateWindowTitle();
+}
+
+void MainWindow::onCloseTab(int index) {
+  if (m_tabWidget->count() <= 1) {
+    // Don't close last tab, just clear it
+    EditorTab* tab = qobject_cast<EditorTab*>(m_tabWidget->widget(index));
+    if (tab != nullptr) {
+      tab->getEditor()->setDocumentText("");
+      tab->setFilePath("");
+      tab->setModified(false);
+      m_tabWidget->setTabText(index, tr("Untitled"));
+    }
+    return;
+  }
+
+  QWidget* widget = m_tabWidget->widget(index);
+  m_tabWidget->removeTab(index);
+  delete widget;
+}
+
+EditorTab* MainWindow::currentTab() const {
+  if (m_tabWidget->count() == 0) return nullptr;
+  return qobject_cast<EditorTab*>(m_tabWidget->currentWidget());
+}
+
+void MainWindow::onTabChanged(int index) {
+  Q_UNUSED(index);
+  EditorTab* tab = currentTab();
+  bool hasTab = (tab != nullptr);
+
+  m_saveFileAction->setEnabled(hasTab);
+  m_saveFileAsAction->setEnabled(hasTab);
+  m_closeTabAction->setEnabled(m_tabWidget->count() > 1);
+
+  updateWindowTitle();
+}
+
+void MainWindow::updateWindowTitle() {
+  EditorTab* tab = currentTab();
+  if (!tab) {
+    setWindowTitle("CodeWizard");
+    return;
+  }
+
+  QString fileName = tab->getFilePath().isEmpty() ?
+      tr("Untitled") : QString::fromStdString(Platform::Path(tab->getFilePath().toStdString()).filename());
+  QString modified = tab->isModified() ? "*" : "";
+  QString title = QString("%1%2 - CodeWizard").arg(fileName, modified);
+  setWindowTitle(title);
+}
+
+void MainWindow::onModificationChanged(bool modified) {
+  EditorTab* senderTab = qobject_cast<EditorTab*>(sender());
+  if (!senderTab) return;
+
+  int index = m_tabWidget->indexOf(senderTab);
+  if (index == -1) return;
+
+  QString tabText = m_tabWidget->tabText(index);
+  if (modified && !tabText.endsWith("*")) {
+    m_tabWidget->setTabText(index, tabText + "*");
+  } else if (!modified && tabText.endsWith("*")) {
+    m_tabWidget->setTabText(index, tabText.chopped(1));
+  }
+
+  updateWindowTitle();
 }
 
 void MainWindow::onDiagnosticsReceived(const QList<LanguageIntelligence::Diagnostic> &diagnostics)
 {
   renderDiagnostics(diagnostics);
 }
+
 void MainWindow::onThemeChanged()
 {
   m_sidebar->applyTheme();
@@ -187,4 +331,24 @@ void MainWindow::renderDiagnostics(const QList<LanguageIntelligence::Diagnostic>
   m_statusBar->showDiagnostics(errors, warnings);
 }
 
+QString MainWindow::getSaveFileName(const QString &suggestedName)
+{
+  // Use Qt's file dialog for consistent UI across platforms
+  return QFileDialog::getSaveFileName(this,
+    tr("Save File As"),
+    getCurrentWorkingDirectory().native().c_str(),
+    tr("All Files (*)"),
+    nullptr,
+    QFileDialog::DontConfirmOverwrite
+  );
+}
+
+CodeWizard::Platform::Path MainWindow::getCurrentWorkingDirectory()
+{
+  // Get current working directory using Platform API
+  auto currentPath = Platform::Path::currentWorkingDirectory();
+  if (currentPath.exists()) { return currentPath; }
+  // Fallback to home directory
+  return Platform::Path::homeDirectory();
+}
 }// namespace CodeWizard::UI

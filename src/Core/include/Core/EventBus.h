@@ -160,4 +160,10 @@ private:
     readIndex_.store(readIdx, std::memory_order_release);
   }
 };
+
+template<typename Ev>
+void postEvent(Ev&& ev)
+{
+  EventBus<std::decay_t<Ev>>::post(std::forward<Ev>(ev));
+}
 }// namespace CodeWizard::Core
