@@ -3,6 +3,7 @@
 #include <QVariant>
 #include <memory>
 #include <vector>
+#include <Core/EventBus.h>
 
 // Versioning for ABI compatibility
 #define CODEWIZARD_PLUGIN_API_VERSION 1

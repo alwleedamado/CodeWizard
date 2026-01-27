@@ -11,7 +11,7 @@ static constexpr std::uint64_t MAX_FILE_SIZE = 15 * 1024 * 1024; // 15MB
 static constexpr int MAX_LINE_LENGTH = 1024 * 1024;
 
 EditorTab::EditorTab(QWidget* parent)
-    : QWidget(parent), m_editor(new CodeTextEdit(this)) {
+    : QWidget(parent), m_editor(new Editor::CodeTextEdit(this)) {
 
     m_layout = new QVBoxLayout();
     m_layout->setContentsMargins(0, 0, 0, 0);

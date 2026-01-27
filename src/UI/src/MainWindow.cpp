@@ -6,12 +6,12 @@
 #include "UI/ProjectView.h"
 #include "UI/Sidebar.h"
 #include "UI/StatusBar.h"
-#include <Editor/Document.h>
 #include <Platform/Path.h>
 #include <QFileDialog>
 #include <QMessageBox>
 #include <QSplitter>
 #include <QVBoxLayout>
+#include <Editor/TreeSitterHighlighter.h>
 
 using namespace CodeWizard;
 

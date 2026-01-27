@@ -3,15 +3,15 @@
 #include "Theme/ThemeEngine.h"
 #include <QApplication>
 #include <QTimer>
-
 namespace CodeWizard::UI {
 
 int UIApplication::run(int argc, char** argv)
 {
   QApplication app(argc, argv);
   auto& theme = Theme::ThemeEngine::instance();
-  theme.setTheme(Theme::ThemeType::CatppuccinFrappé); // or load from config
+  theme.setTheme(Theme::ThemeType::CatppuccinMocha); // or load from config
   theme.applyToApplication();
+  Editor::TreeSitterManager::instance().initialize(":/queries");
   m_window = new MainWindow();
   m_window->show();
   QTimer::singleShot(0, []() {

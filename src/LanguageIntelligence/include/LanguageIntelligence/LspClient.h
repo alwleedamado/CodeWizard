@@ -5,7 +5,6 @@
 #include "LspMessage.h"
 #include <Core/Types.h>
 #include <Platform/Path.h>
-#include <Editor/Document.h>
 #include <functional>
 #include <memory>
 #include <vector>
@@ -23,9 +22,6 @@ public:
     void stop();
 
     void initialize(const Platform::Path& rootPath);
-    void openDocument(const Editor::Document& document);
-    void closeDocument(const Platform::Path& filePath);
-    void changeDocument(const Editor::Document& document, const Editor::Change& change);
 
     void setDiagnosticsCallback(DiagnosticsCallback callback);
 

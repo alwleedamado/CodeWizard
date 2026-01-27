@@ -11,7 +11,7 @@
 #include <QMap>
 #include <QMenuBar>
 
-namespace CodeWizard::Editor {
+namespace CodeWizard::UI {
 class Document;
 }
 

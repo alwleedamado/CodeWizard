@@ -33,5 +33,5 @@ enum class WriteOption {
 [[nodiscard]] Result<std::vector<FileInfo>> listDirectory(const Path& dir);
 [[nodiscard]] Result<void> createDirectory(const Path& dir, bool recursive = false);
 [[nodiscard]] Result<void> remove(const Path& path, bool recursive = false);
-
+[[nodiscard]] Result<FileInfo> stat(const Path& path);
 } // namespace CodeWizard::Platform

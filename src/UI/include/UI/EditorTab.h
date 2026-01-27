@@ -1,8 +1,6 @@
 #pragma once
 
-#include "CodeTextEdit.h"
-
-
+#include "Editor/CodeTextEdit.h"
 #include "Platform/Path.h"
 #include <QVBoxLayout>
 #include <QWidget>
@@ -25,7 +23,7 @@ public:
     [[nodiscard]] QString getFilePath() const { return m_filePath; }
     void setFilePath(const QString& filepath) { m_filePath = filepath; }
 
-    [[nodiscard]] CodeTextEdit* getEditor() const { return m_editor; }
+    [[nodiscard]] Editor::CodeTextEdit * getEditor() const { return m_editor; }
 
 signals:
     void modificationChanged(bool modified);
@@ -38,7 +36,7 @@ private:
     static bool isFileTooLarge(const CodeWizard::Platform::Path& filePath);
     static bool hasVeryLongLine(const CodeWizard::Platform::Path& filePath, int maxLineLength = 100000);
 
-    CodeTextEdit* m_editor = nullptr;
+    Editor::CodeTextEdit * m_editor = nullptr;
     QString m_filePath;
     QVBoxLayout* m_layout = nullptr;
 };

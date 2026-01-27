@@ -107,54 +107,6 @@ void LspClient::initialize(const Platform::Path& rootPath) {
     }
 }
 
-void LspClient::openDocument(const Editor::Document& document) {
-    if (!m_isInitialized) return;
-
-    LspMessage msg;
-    msg.method = "textDocument/didOpen";
-    nlohmann::json textDoc;
-    textDoc["uri"] = "file://" + document.filePath().native();
-    textDoc["languageId"] = "cpp";
-    textDoc["version"] = 1;
-    textDoc["text"] = document.buffer().text();
-    msg.params["textDocument"] = textDoc;
-    writeMessage(msg);
-}
-
-void LspClient::closeDocument(const Platform::Path& filePath) {
-    if (!m_isInitialized) return;
-
-    LspMessage msg;
-    msg.method = "textDocument/didClose";
-    nlohmann::json textDoc;
-    textDoc["uri"] = "file://" + filePath.native();
-    msg.params["textDocument"] = textDoc;
-    writeMessage(msg);
-}
-
-void LspClient::changeDocument(const Editor::Document& document, const Editor::Change& change) {
-    if (!m_isInitialized) return;
-
-    LspMessage msg;
-    msg.method = "textDocument/didChange";
-    nlohmann::json textDoc;
-    textDoc["uri"] = "file://" + document.filePath().native();
-    textDoc["version"] = 1; // Simplified - should track version per doc
-
-    nlohmann::json contentChange;
-    if (!change.oldText.empty()) {
-        // Replacement or deletion
-        contentChange["range"]["start"]["line"] = change.oldRange.start.line;
-        contentChange["range"]["start"]["character"] = change.oldRange.start.character;
-        contentChange["range"]["end"]["line"] = change.oldRange.end.line;
-        contentChange["range"]["end"]["character"] = change.oldRange.end.character;
-    }
-    contentChange["text"] = change.newText;
-    msg.params["contentChanges"] = std::vector<nlohmann::json>{contentChange};
-    msg.params["textDocument"] = textDoc;
-    writeMessage(msg);
-}
-
 void LspClient::setDiagnosticsCallback(DiagnosticsCallback callback) {
     m_diagnosticsCallback = std::move(callback);
 }

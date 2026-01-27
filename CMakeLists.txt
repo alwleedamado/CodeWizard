@@ -14,6 +14,31 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+# Find system Tree-sitter
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(TREE_SITTER REQUIRED IMPORTED_TARGET tree-sitter)
+# Function to handle Tree-sitter language linking
+function(link_treesitter_language target lang)
+    # Try pkg-config first
+    pkg_check_modules(TREE_SITTER_${lang} QUIET tree-sitter-${lang})
+
+    if(TREE_SITTER_${lang}_FOUND)
+        target_link_libraries(${target} PRIVATE ${TREE_SITTER_${lang}_LIBRARIES})
+        target_compile_definitions(${target} PRIVATE HAVE_TREE_SITTER_${lang})
+        message(STATUS "Found tree-sitter-${lang} via pkg-config")
+    else()
+        # Fallback to direct library search
+        find_library(TREE_SITTER_${lang}_LIB tree-sitter-${lang})
+        if(TREE_SITTER_${lang}_LIB)
+            target_link_libraries(${target} PRIVATE ${TREE_SITTER_${lang}_LIB})
+            target_compile_definitions(${target} PRIVATE HAVE_TREE_SITTER_${lang})
+            message(STATUS "Found tree-sitter-${lang} via direct search: ${TREE_SITTER_${lang}_LIB} HAVE_TREE_SITTER_${lang}")
+        else()
+            message(STATUS "tree-sitter-${lang} not found ")
+        endif()
+    endif()
+endfunction()
+
 # Performance-oriented defaults
 if (NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Release CACHE STRING "" FORCE)
@@ -87,24 +112,35 @@ add_subdirectory(src/UI)
 # ---------------------------------------------------------------------------
 # Final executable (composition root only)
 # ---------------------------------------------------------------------------
+# Add resource file
+set(RESOURCES
+        src/Editor/resources/queries/queries.qrc
+)
+
+qt6_add_resources(RESOURCE_SOURCES ${RESOURCES})
 
 add_executable(CodeWizardApp
     src/main.cpp
+    ${RESOURCE_SOURCES}
 )
 
 if(CMAKE_BUILD_TYPE STREQUAL Release)
     add_compile_options(-Oz -flto)
     add_link_options(-flto -s)
+
 endif()
-
-
+if (CMAKE_BUILD_TYPE STREQUAL "Release" OR CMAKE_BUILD_TYPE STREQUAL "MinSizeRel")
+    target_compile_definitions(Editor PUBLIC
+            $<$<CONFIG:Release>:QT_NO_DEBUG_OUTPUT>
+    )
+endif ()
 target_link_libraries(CodeWizardApp
+        PRIVATE tree-sitter
     PRIVATE
         # # global options
         CodeWizard_options
         # # warnings
         CodeWizard_warnings
-
         # modules
 #        Core
 #        Platform
@@ -119,6 +155,14 @@ target_link_libraries(CodeWizardApp
 #        Persistence
 #        UI
 )
+link_treesitter_language(Editor c)
+link_treesitter_language(Editor cpp)
+link_treesitter_language(Editor javascript)
+link_treesitter_language(Editor typescript)
+link_treesitter_language(Editor rust)
+link_treesitter_language(Editor go)
+link_treesitter_language(Editor python)
+
 
 set_target_properties(CodeWizardApp PROPERTIES
     OUTPUT_NAME "CodeWizard"

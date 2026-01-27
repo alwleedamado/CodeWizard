@@ -41,7 +41,7 @@ public:
 
 
   // Construct error
-  explicit Result(Error error) : m_data(std::move(error)) {}
+  constexpr  explicit Result(Error error) : m_data(std::move(error)) {}
 
   // Observers
   [[nodiscard]] bool hasValue() const noexcept { return std::holds_alternative<T>(m_data); }
